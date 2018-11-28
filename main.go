@@ -34,16 +34,7 @@ func main() {
 
 	isInstalled := true
 	if _, err := exec.LookPath("flutter"); err != nil {
-		switch err.(type) {
-		case *exec.Error:
-			if err.Error() == exec.ErrNotFound.Error() {
-				isInstalled = false
-			}
-		}
-
-		if isInstalled {
-			failf("Failed to determine if flutter is installed, error: %s", err)
-		}
+		isInstalled = false
 	}
 
 	if cfg.Overwrite || !isInstalled {

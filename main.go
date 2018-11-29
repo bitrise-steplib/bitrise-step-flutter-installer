@@ -97,5 +97,4 @@ func main() {
 	if err := doctorCmd.Run(); err != nil {
 		failf("Failed to check flutter doctor, error: %s", err)
 	}
-
 }

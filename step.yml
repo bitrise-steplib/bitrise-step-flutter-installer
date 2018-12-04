@@ -1,15 +1,9 @@
-title: |-
-  Flutter Installer
-summary: |
-  This step will install the selected version of Flutter SDK if flutter is not yet available on the system.
-description: |
-  This step will install the selected version of Flutter SDK if flutter is not yet available on the system.
+title: Flutter Installer
+summary: This step will install the selected version of Flutter SDK if flutter is not yet available on the system.
+description: This step will install the selected version of Flutter SDK if flutter is not yet available on the system.
 website: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 source_code_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 support_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer/issues
-host_os_tags:
-  - osx-10.10
-  - ubuntu-16.04
 
 type_tags:
   - utility
@@ -25,20 +19,20 @@ toolkit:
 inputs:
   - version: v0.11.9
     opts:
-      title: "Flutter SDK Version"
-      summary: "The tag or branch of the Flutter SDK's git repository."
+      title: Flutter SDK Version
+      summary: The tag or branch of the Flutter SDK's git repository.
       description: |-
         The tag or branch of the Flutter SDK's git repository. 
-      
-        To find the available version tags see this list: https://github.com/flutter/flutter/releases
 
-        To see the the avilable branches visit: https://github.com/flutter/flutter/branches
+        To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)
+
+        To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
       is_required: true
   - overwrite: true
     opts:
-      title: "Overwrite currently installed version"
-      summary: "The currently installed Flutter SDK will be overwritten if this option is set to true"
-      description: "The currently installed Flutter SDK will be overwritten if this option is set to true"
+      title: Overwrite currently installed version
+      summary: The currently installed Flutter SDK will be overwritten if this option is set to true
+      description: The currently installed Flutter SDK will be overwritten if this option is set to true
       is_required: true
       value_options:
         - "false"

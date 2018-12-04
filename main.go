@@ -75,7 +75,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Flutter version")
 
-	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout)
+	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
 
 	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	fmt.Println()
@@ -87,7 +87,7 @@ func main() {
 	fmt.Println()
 	log.Infof("Check flutter doctor")
 
-	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout)
+	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
 
 	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 	fmt.Println()

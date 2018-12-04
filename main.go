@@ -77,7 +77,6 @@ func main() {
 
 	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout)
 
-	fmt.Println()
 	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	fmt.Println()
 
@@ -90,7 +89,6 @@ func main() {
 
 	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout)
 
-	fmt.Println()
 	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 	fmt.Println()
 

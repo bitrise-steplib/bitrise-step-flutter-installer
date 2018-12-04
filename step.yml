@@ -12,6 +12,12 @@ is_requires_admin_user: true
 is_always_run: false
 is_skippable: false
 
+deps:
+  brew:
+  - name: git
+  apt_get:
+  - name: git
+
 toolkit:
   go:
     package_name: github.com/bitrise-steplib/bitrise-step-flutter-installer

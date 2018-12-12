@@ -1,4 +1,4 @@
-title: Flutter Installer
+title: Flutter Install
 summary: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
 description: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
 website: https://github.com/bitrise-steplib/bitrise-step-flutter-installer

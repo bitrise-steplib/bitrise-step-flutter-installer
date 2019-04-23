@@ -52,15 +52,6 @@ func main() {
 		if err := versionCmd.Run(); err != nil {
 			failf("Failed to check flutter version, error: %s", err)
 		}
-
-		fmt.Println()
-		log.Infof("Preinstalled flutter doctor")
-		doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
-		log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
-		fmt.Println()
-		if err := doctorCmd.Run(); err != nil {
-			failf("Failed to check flutter doctor, error: %s", err)
-		}
 	}
 
 	if preInstalled && isReleaseChannel(cfg.Version) {
@@ -109,6 +100,15 @@ func main() {
 			failf("Failed to export env with envman, error: %s", err)
 		}
 		log.Donef("Added to $PATH")
+
+		fmt.Println()
+		log.Infof("Check flutter doctor")
+		doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
+		log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
+		fmt.Println()
+		if err := doctorCmd.Run(); err != nil {
+			failf("Failed to check flutter doctor, error: %s", err)
+		}
 	}
 
 	fmt.Println()
@@ -118,14 +118,5 @@ func main() {
 	fmt.Println()
 	if err := versionCmd.Run(); err != nil {
 		failf("Failed to check flutter version, error: %s", err)
-	}
-
-	fmt.Println()
-	log.Infof("Check flutter doctor")
-	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
-	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
-	fmt.Println()
-	if err := doctorCmd.Run(); err != nil {
-		failf("Failed to check flutter doctor, error: %s", err)
 	}
 }

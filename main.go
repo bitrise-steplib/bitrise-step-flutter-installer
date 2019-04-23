@@ -43,9 +43,9 @@ func main() {
 	_, err := exec.LookPath("flutter")
 	if err != nil {
 		preInstalled = false
-		log.Printf("Flutter is not preinstalled.")
+		log.TPrintf("Flutter is not preinstalled.")
 	} else {
-		log.Infof("Preinstalled Flutter version:")
+		log.TInfof("Preinstalled Flutter version:")
 		versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -56,7 +56,7 @@ func main() {
 
 	if preInstalled && isReleaseChannel(cfg.Version) {
 		fmt.Println()
-		log.Infof("Setting flutter channel")
+		log.TInfof("Setting flutter channel")
 		channelCmd := command.New("flutter", "channel", cfg.Version).SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", channelCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -65,7 +65,7 @@ func main() {
 		}
 
 		fmt.Println()
-		log.Infof("Upgrading flutter")
+		log.TInfof("Upgrading flutter")
 		upgradeCmd := command.New("flutter", "upgrade").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", channelCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -74,7 +74,7 @@ func main() {
 		}
 	} else {
 		fmt.Println()
-		log.Infof("Downloading Flutter SDK")
+		log.TInfof("Downloading Flutter SDK")
 		log.Printf("git clone")
 
 		sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
@@ -91,7 +91,7 @@ func main() {
 			failf("Failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
 		}
 
-		log.Printf("adding flutter bin directory to $PATH")
+		log.TPrintf("adding flutter bin directory to $PATH")
 		path := filepath.Join(sdkLocation, "bin") + ":" + os.Getenv("PATH")
 		if err := os.Setenv("PATH", path); err != nil {
 			failf("Failed to set env, error: %s", err)
@@ -102,7 +102,7 @@ func main() {
 		log.Donef("Added to $PATH")
 
 		fmt.Println()
-		log.Infof("Check flutter doctor")
+		log.TInfof("Check flutter doctor")
 		doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 		fmt.Println()

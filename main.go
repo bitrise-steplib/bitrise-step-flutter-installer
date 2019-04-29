@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-tools/go-steputils/stepconf"
 	"github.com/bitrise-tools/go-steputils/tools"
 )
@@ -22,16 +23,6 @@ func failf(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func isReleaseChannel(versionString string) bool {
-	releaseChannels := [...]string{"stable", "beta", "dev", "master"}
-	for _, channel := range releaseChannels {
-		if channel == versionString {
-			return true
-		}
-	}
-	return false
-}
-
 func main() {
 	var cfg config
 	if err := stepconf.Parse(&cfg); err != nil {
@@ -43,9 +34,9 @@ func main() {
 	_, err := exec.LookPath("flutter")
 	if err != nil {
 		preInstalled = false
-		log.TPrintf("Flutter is not preinstalled.")
+		log.Printf("Flutter is not preinstalled.")
 	} else {
-		log.TInfof("Preinstalled Flutter version:")
+		log.Infof("Preinstalled Flutter version:")
 		versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -54,9 +45,10 @@ func main() {
 		}
 	}
 
-	if preInstalled && isReleaseChannel(cfg.Version) {
+	// Upgrade, if already installed and a release is channel is required
+	if preInstalled && sliceutil.IsStringInSlice(cfg.Version, []string{"stable", "beta", "dev", "master"}) {
 		fmt.Println()
-		log.TInfof("Setting flutter channel")
+		log.Infof("Setting flutter channel")
 		channelCmd := command.New("flutter", "channel", cfg.Version).SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", channelCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -65,7 +57,7 @@ func main() {
 		}
 
 		fmt.Println()
-		log.TInfof("Upgrading flutter")
+		log.Infof("Upgrading flutter")
 		upgradeCmd := command.New("flutter", "upgrade").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", channelCmd.PrintableCommandArgs())
 		fmt.Println()
@@ -74,11 +66,12 @@ func main() {
 		}
 	} else {
 		fmt.Println()
-		log.TInfof("Downloading Flutter SDK")
+		log.Infof("Downloading Flutter SDK")
 		log.Printf("git clone")
 
 		sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 
+		log.Printf("Cleaning SDK target path: %s", sdkLocation)
 		if err := os.RemoveAll(sdkLocation); err != nil {
 			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
 		}
@@ -91,7 +84,7 @@ func main() {
 			failf("Failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
 		}
 
-		log.TPrintf("adding flutter bin directory to $PATH")
+		log.Printf("adding flutter bin directory to $PATH")
 		path := filepath.Join(sdkLocation, "bin") + ":" + os.Getenv("PATH")
 		if err := os.Setenv("PATH", path); err != nil {
 			failf("Failed to set env, error: %s", err)
@@ -102,7 +95,7 @@ func main() {
 		log.Donef("Added to $PATH")
 
 		fmt.Println()
-		log.TInfof("Check flutter doctor")
+		log.Infof("Check flutter doctor")
 		doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 		fmt.Println()

@@ -28,7 +28,7 @@ func installBundle(bundleURL string, targetDir string) error {
 		failf("Invalid hostname, expecting %s", storageHost)
 	}
 
-	archive, err := ioutil.TempFile("", "*"+path.Ext(url.Path))
+	archive, err := ioutil.TempFile("", "*"+path.Base(url.Path))
 	if err != nil {
 		failf("%s", err)
 	}

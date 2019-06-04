@@ -33,7 +33,22 @@ inputs:
       description: |-
         The tag or branch of the Flutter SDK's git repository. 
 
+        The defaults stable setting does not need any installation, if the stack has flutter stable channel preinstalled.
+
         To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)
 
         To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
       is_required: true
+
+  - installation_bundle_url: ""
+    opts:
+      title: Installation bundle URL
+      is_required: false
+      description: |-
+        If provided will download a Flutter distribution bundle
+
+        https://github.com/flutter/flutter/wiki/Flutter-Installation-Bundles
+
+  - is_debug: false
+    opts:
+      title: Run flutter doctor for debug purpuses

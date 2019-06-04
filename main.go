@@ -95,27 +95,29 @@ func main() {
 	fmt.Println()
 
 	sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
+	sdkLocationWithFlutterDir := filepath.Join(sdkLocation, "flutter")
 
 	if bundleSpecified {
-		log.Infof("Will install Flutter from installation bundle: %s", cfg.BundleURL)
-
 		log.Printf("Cleaning SDK target path: %s", sdkLocation)
 		if err := os.RemoveAll(sdkLocation); err != nil {
 			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
 		}
+
+		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
 		if err := installBundle(cfg.BundleURL, sdkLocation); err != nil {
 			log.Warnf("Failed to install bundle, error: %s", err)
 		}
 	} else {
-		log.Infof("Will install Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
-
 		log.Printf("Cleaning SDK target path: %s", sdkLocation)
 		if err := os.RemoveAll(sdkLocation); err != nil {
 			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
 		}
 
-		gitRepo, err := git.New(sdkLocation)
+		log.Infof("Cloning Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
+
+		// repository name ('flutter') is in the path, will be checked out there
+		gitRepo, err := git.New(sdkLocationWithFlutterDir)
 		if err != nil {
 			failf("Failed to open git repo, error: %s", err)
 		}
@@ -126,10 +128,19 @@ func main() {
 	}
 
 	log.Printf("Adding flutter bin directory to $PATH")
-	path := filepath.Join(sdkLocation, "bin") + ":" + os.Getenv("PATH")
+	if cfg.IsDebug {
+		log.Debugf("PATH: %s", os.Getenv("PATH"))
+	}
+
+	path := filepath.Join(sdkLocationWithFlutterDir, "bin") + ":" + os.Getenv("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}
+
+	if cfg.IsDebug {
+		log.Debugf("PATH: %s", os.Getenv("PATH"))
+	}
+
 	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
 		failf("Failed to export env with envman, error: %s", err)
 	}

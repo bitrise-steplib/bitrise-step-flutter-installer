@@ -27,17 +27,27 @@ workflows:
         title: git install dev
         inputs:
         - version: "dev"
-    - path::./:
-        run_if: |-
-          {{enveq "GOOS" "darwin"}}
-        title: bundle install macos
+    - script:
+        title: set platform specific bundle URL
         inputs:
+         - content: |-
+            #!/bin/bash
+            set -ex
+            URL="placeholder"
+            if [ $(uname -s) == "Darwin" ]; then
+              URL="https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
+            fi
+            if [ $(uname -s) == "Linux" ]; then
+              URL="https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_v1.6.3-beta.tar.xz"
+            fi
+            envman add --key "BUNDLE_URL" --value "${URL}"
     - path::./:
-        run_if: |-
-          {{enveq "GOOS" "linux"}}
-        title: bundle install linux
+        run_if: true
+        title: platform specific bundle install
         inputs:
-        - installation_bundle_url: "https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_v1.6.3-beta.tar.xz"
+        - installation_bundle_url: $BUNDLE_URL
+          opts:
+            is_expand: true
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

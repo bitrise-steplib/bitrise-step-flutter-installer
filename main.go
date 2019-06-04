@@ -51,6 +51,7 @@ func main() {
 "Flutter SDK installation bundle URL" (installation_bundle_url)`)
 	}
 	stepconf.Print(cfg)
+	fmt.Println()
 
 	if bundleSpecified && gitBranchSpecified {
 		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
@@ -91,6 +92,7 @@ func main() {
 
 	fmt.Println()
 	log.Infof("Downloading Flutter SDK")
+	fmt.Println()
 
 	sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 
@@ -135,11 +137,12 @@ func main() {
 
 	fmt.Println()
 	log.Infof("Flutter version")
-	_, rawVersionOutput, err := flutterVersionInfo()
-	if err != nil {
-		log.Warnf("%s", err)
+	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
+	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
+	fmt.Println()
+	if err := versionCmd.Run(); err != nil {
+		failf("Failed to check flutter version, error: %s", err)
 	}
-	log.Printf(rawVersionOutput)
 
 	if cfg.IsDebug {
 		if err := runFlutterDoctor(); err != nil {

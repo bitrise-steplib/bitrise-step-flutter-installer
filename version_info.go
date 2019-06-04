@@ -15,9 +15,11 @@ type flutterVersion struct {
 }
 
 func flutterVersionInfo() (flutterVersion, string, error) {
+	fmt.Println()
 	versionCmd := command.New("flutter", "--version")
 	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	fmt.Println()
+
 	out, err := versionCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {

@@ -2,129 +2,28 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/git"
-	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/mholt/archiver"
 )
 
 type config struct {
-	Version string `env:"version,required"`
-
+	Version   string `env:"version,required"`
 	BundleURL string `env:"installation_bundle_url"`
-
-	IsDebug bool `env:"is_debug,required"`
+	IsDebug   bool   `env:"is_debug,required"`
 }
 
 func failf(msg string, args ...interface{}) {
 	log.Errorf(msg, args...)
 	os.Exit(1)
-}
-
-func matchVersion(versionOutput string) (string, error) {
-	versionRegexp := regexp.MustCompile(`(?im)^Flutter\s+(\S+?)\s+`)
-	submatches := versionRegexp.FindStringSubmatch(versionOutput)
-	if submatches == nil {
-		return "", fmt.Errorf("failed to parse flutter version")
-	}
-	return submatches[1], nil
-}
-
-func matchChannel(versionOutput string) (string, error) {
-	channelRegexp := regexp.MustCompile(`(?im)\s+channel\s+(\S+?)\s+`)
-	submatches := channelRegexp.FindStringSubmatch(versionOutput)
-	if submatches == nil {
-		return "", fmt.Errorf("failed to parse flutter channel")
-	}
-	return submatches[1], nil
-}
-
-type flutterVersion struct {
-	version string
-	channel string
-}
-
-func flutterVersionInfo() (flutterVersion, string, error) {
-	versionCmd := command.New("flutter", "--version")
-	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
-	fmt.Println()
-	out, err := versionCmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		if errorutil.IsExitStatusError(err) {
-			return flutterVersion{}, out, fmt.Errorf("failed to get flutter version, error: %s, out: %s", err, out)
-		}
-		return flutterVersion{}, "", fmt.Errorf("failed to get flutter version, error: %s", err)
-	}
-
-	channel, err := matchChannel(out)
-	if err != nil {
-		return flutterVersion{}, out, err
-	}
-
-	version, err := matchVersion(out)
-	if err != nil {
-		return flutterVersion{channel: channel}, out, err
-	}
-
-	return flutterVersion{
-		channel: channel,
-		version: version,
-	}, out, nil
-}
-
-func unarchiveBundle(bundleURL string, targetPath string) error {
-	url, err := url.Parse(bundleURL)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.Get(bundleURL)
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Warnf("Failed to close http resonse body, error: %s", err)
-		}
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	archive, err := ioutil.TempFile("", "*"+path.Ext(url.Path))
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err := archive.Close(); err != nil {
-			log.Warnf("Failed to close file, error: %s", err)
-		}
-	}()
-
-	_, err = io.Copy(archive, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if err := archiver.Unarchive(archive.Name(), targetPath); err != nil {
-		return err
-	}
-	return nil
 }
 
 func runFlutterDoctor() error {
@@ -184,35 +83,30 @@ func main() {
 
 	sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 
-	log.Printf("Cleaning SDK target path: %s", sdkLocation)
-	if err := os.RemoveAll(sdkLocation); err != nil {
-		failf("Failed to remove path(%s), error: %s", sdkLocation, err)
-	}
-
-	installed := false
+	installed := true
 	if strings.TrimSpace(cfg.BundleURL) != "" {
-		url, err := url.Parse(cfg.BundleURL)
-		if err != nil {
-			failf("%s", err)
+		log.Infof("Will install Flutter from installation bundle: %s", cfg.BundleURL)
+
+		log.Printf("Cleaning SDK target path: %s", sdkLocation)
+		if err := os.RemoveAll(sdkLocation); err != nil {
+			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
 		}
 
-		if url.Scheme != "https" {
-			failf("Invalid URL scheme: %s, expecting https", url.Scheme)
+		if err := installBundle(cfg.BundleURL, sdkLocation); err != nil {
+			log.Warnf("Failed to install bundle, error: %s", err)
+			log.Infof("Falling back to installation from git repository.")
+			installed = false
 		}
-		const storageHost = "storage.googleapis.com"
-		if url.Host != storageHost {
-			failf("Invalid hostname, expecting %s", storageHost)
-		}
-
-		if err := unarchiveBundle(cfg.BundleURL, sdkLocation); err != nil {
-			log.Warnf("Installing Flutter from installation bundle failed, error: %s", err)
-			log.Infof("Falling back to cloning Flutter git repository.")
-		}
-		installed = true
 	}
 
 	if !installed {
-		log.Printf("git clone")
+		log.Infof("Will install Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
+
+		log.Printf("Cleaning SDK target path: %s", sdkLocation)
+		if err := os.RemoveAll(sdkLocation); err != nil {
+			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
+		}
+
 		gitRepo, err := git.New(sdkLocation)
 		if err != nil {
 			failf("Failed to open git repo, error: %s", err)
@@ -223,7 +117,7 @@ func main() {
 		}
 	}
 
-	log.Printf("adding flutter bin directory to $PATH")
+	log.Printf("Adding flutter bin directory to $PATH")
 	path := filepath.Join(sdkLocation, "bin") + ":" + os.Getenv("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)

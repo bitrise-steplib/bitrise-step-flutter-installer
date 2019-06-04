@@ -1,4 +1,4 @@
-format_version: 6
+format_version: 7
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
@@ -23,6 +23,14 @@ workflows:
         - is_create_path: true
     - path::./:
         title: Test - Install Flutter SDK
+    - path::./:
+        title: Test - Install Flutter SDK
+        inputs:
+        - version: "dev"
+    - path::./:
+        title: Test - Install Flutter SDK
+        inputs:
+        - installation_bundle_url: "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

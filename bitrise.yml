@@ -22,16 +22,22 @@ workflows:
         - path: ./_tmp
         - is_create_path: true
     - path::./:
-        title: Test - Install Flutter SDK
+        title: git install default
     - path::./:
-        title: Test - Install Flutter SDK
+        title: git install dev
         inputs:
         - version: "dev"
     - path::./:
-        run_if: {{enveq "GOOS" "darwin"}}
-        title: Test - Install Flutter SDK
+        run_if: |-
+          {{enveq "GOOS" "darwin"}}
+        title: bundle install macos
         inputs:
-        - installation_bundle_url: "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
+    - path::./:
+        run_if: |-
+          {{enveq "GOOS" "linux"}}
+        title: bundle install linux
+        inputs:
+        - installation_bundle_url: "https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_v1.6.3-beta.tar.xz"
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

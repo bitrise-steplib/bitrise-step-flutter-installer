@@ -9,9 +9,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/bitrise-io/go-utils/retry"
-
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/mholt/archiver"
 )
 

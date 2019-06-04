@@ -16,7 +16,7 @@ import (
 )
 
 type config struct {
-	Version   string `env:"version,required"`
+	Version   string `env:"version"`
 	BundleURL string `env:"installation_bundle_url"`
 	IsDebug   bool   `env:"is_debug,required"`
 }
@@ -42,6 +42,11 @@ func main() {
 	var cfg config
 	if err := stepconf.Parse(&cfg); err != nil {
 		failf("Issue with input: %s", err)
+	}
+	if strings.TrimSpace(cfg.Version) == "" && strings.TrimSpace(cfg.BundleURL) == "" {
+		log.Errorf(`One of the following inputs needs to be specified:
+Flutter SDK git repository version (version)
+Flutter SDK installation bundle URL (installation_bundle_url)`)
 	}
 	stepconf.Print(cfg)
 

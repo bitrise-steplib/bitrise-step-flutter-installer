@@ -43,12 +43,18 @@ func main() {
 	if err := stepconf.Parse(&cfg); err != nil {
 		failf("Issue with input: %s", err)
 	}
-	if strings.TrimSpace(cfg.Version) == "" && strings.TrimSpace(cfg.BundleURL) == "" {
+	bundleSpecified := strings.TrimSpace(cfg.BundleURL) != ""
+	gitBranchSpecified := strings.TrimSpace(cfg.Version) != ""
+	if !bundleSpecified && !gitBranchSpecified {
 		log.Errorf(`One of the following inputs needs to be specified:
-Flutter SDK git repository version (version)
-Flutter SDK installation bundle URL (installation_bundle_url)`)
+"Flutter SDK git repository version" (version)
+"Flutter SDK installation bundle URL" (installation_bundle_url)`)
 	}
 	stepconf.Print(cfg)
+
+	if bundleSpecified && gitBranchSpecified {
+		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
+	}
 
 	preInstalled := true
 	_, err := exec.LookPath("flutter")
@@ -72,7 +78,7 @@ Flutter SDK installation bundle URL (installation_bundle_url)`)
 	}
 
 	requiredVersion := strings.TrimSpace(cfg.Version)
-	if preInstalled && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) && requiredVersion == versionInfo.channel {
+	if preInstalled && !bundleSpecified && requiredVersion == versionInfo.channel && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
 		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.", requiredVersion, versionInfo.channel)
 
 		if cfg.IsDebug {
@@ -88,8 +94,7 @@ Flutter SDK installation bundle URL (installation_bundle_url)`)
 
 	sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 
-	installed := true
-	if strings.TrimSpace(cfg.BundleURL) != "" {
+	if bundleSpecified {
 		log.Infof("Will install Flutter from installation bundle: %s", cfg.BundleURL)
 
 		log.Printf("Cleaning SDK target path: %s", sdkLocation)
@@ -99,12 +104,8 @@ Flutter SDK installation bundle URL (installation_bundle_url)`)
 
 		if err := installBundle(cfg.BundleURL, sdkLocation); err != nil {
 			log.Warnf("Failed to install bundle, error: %s", err)
-			log.Infof("Falling back to installation from git repository.")
-			installed = false
 		}
-	}
-
-	if !installed {
+	} else {
 		log.Infof("Will install Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
 
 		log.Printf("Cleaning SDK target path: %s", sdkLocation)

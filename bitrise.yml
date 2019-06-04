@@ -28,6 +28,7 @@ workflows:
         inputs:
         - version: "dev"
     - path::./:
+        run_if: {{enveq "GOOS" "darwin"}}
         title: Test - Install Flutter SDK
         inputs:
         - installation_bundle_url: "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"

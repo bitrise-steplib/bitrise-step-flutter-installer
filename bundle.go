@@ -11,26 +11,25 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
-	"github.com/mholt/archiver"
 )
 
-func installBundle(bundleURL string, targetDir string) error {
+func downloadBundle(bundleURL string) (string, error) {
 	url, err := url.Parse(bundleURL)
 	if err != nil {
-		failf("%s", err)
+		return "", fmt.Errorf("%s", err)
 	}
 
 	if url.Scheme != "https" {
-		failf("Invalid URL scheme: %s, expecting https", url.Scheme)
+		return "", fmt.Errorf("Invalid URL scheme: %s, expecting https", url.Scheme)
 	}
 	const storageHost = "storage.googleapis.com"
 	if url.Host != storageHost {
-		failf("Invalid hostname, expecting %s", storageHost)
+		return "", fmt.Errorf("Invalid hostname, expecting %s", storageHost)
 	}
 
 	archive, err := ioutil.TempFile("", "*"+path.Base(url.Path))
 	if err != nil {
-		failf("%s", err)
+		return "", fmt.Errorf("%s", err)
 	}
 
 	defer func() {
@@ -39,18 +38,14 @@ func installBundle(bundleURL string, targetDir string) error {
 		}
 	}()
 
-	if err := downloadBundle(bundleURL, archive); err != nil {
-		return fmt.Errorf("failed to download bundle, error: %s", err)
+	if err := runRequest(bundleURL, archive); err != nil {
+		return "", fmt.Errorf("failed to download bundle, error: %s", err)
 	}
 
-	if err := unarchiveBundle(archive.Name(), targetDir); err != nil {
-		return fmt.Errorf("failed to unarchive, error: %s", err)
-	}
-
-	return nil
+	return archive.Name(), nil
 }
 
-func downloadBundle(bundleURL string, output io.Writer) error {
+func runRequest(bundleURL string, output io.Writer) error {
 	if err := retry.Times(3).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.TWarnf("%d query attempt failed", attempt)
@@ -75,13 +70,6 @@ func downloadBundle(bundleURL string, output io.Writer) error {
 		return nil
 	}); err != nil {
 		return fmt.Errorf("failed to upload, error: %s", err)
-	}
-	return nil
-}
-
-func unarchiveBundle(archivePath string, targetDir string) error {
-	if err := archiver.Unarchive(archivePath, targetDir); err != nil {
-		return err
 	}
 	return nil
 }

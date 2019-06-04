@@ -13,6 +13,7 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/mholt/archiver"
 )
 
 type config struct {
@@ -105,8 +106,13 @@ func main() {
 
 		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
-		if err := installBundle(cfg.BundleURL, sdkLocation); err != nil {
-			log.Warnf("Failed to install bundle, error: %s", err)
+		archivePath, err := downloadBundle(cfg.BundleURL)
+		if err != nil {
+			failf("failed to download bundle, error: %s", err)
+		}
+
+		if err := archiver.Unarchive(archivePath, sdkLocation); err != nil {
+			log.Warnf("failed to unarchive, error: %s", err)
 		}
 	} else {
 		log.Printf("Cleaning SDK target path: %s", sdkLocation)

@@ -112,6 +112,8 @@ func main() {
 		}
 
 		if err := archiver.Unarchive(archivePath, sdkLocation); err != nil {
+			// A warning to avoid error with official installer bundle on linux:
+			// reading file in tar archive: ... making hard link for: link ... :no such file or directory
 			log.Warnf("failed to unarchive, error: %s", err)
 		}
 	} else {

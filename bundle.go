@@ -13,18 +13,18 @@ import (
 	"github.com/bitrise-io/go-utils/retry"
 )
 
-func downloadBundle(bundleURL string) (string, error) {
+func downloadBundle(bundleURL string) (archivePath string, err error) {
 	url, err := url.Parse(bundleURL)
 	if err != nil {
 		return "", fmt.Errorf("%s", err)
 	}
 
 	if url.Scheme != "https" {
-		return "", fmt.Errorf("Invalid URL scheme: %s, expecting https", url.Scheme)
+		return "", fmt.Errorf("invalid URL scheme: %s, expecting https", url.Scheme)
 	}
 	const storageHost = "storage.googleapis.com"
 	if url.Host != storageHost {
-		return "", fmt.Errorf("Invalid hostname, expecting %s", storageHost)
+		return "", fmt.Errorf("invalid hostname, expecting %s", storageHost)
 	}
 
 	archive, err := ioutil.TempFile("", "*"+path.Base(url.Path))
@@ -33,8 +33,9 @@ func downloadBundle(bundleURL string) (string, error) {
 	}
 
 	defer func() {
-		if err := archive.Close(); err != nil {
-			log.Warnf("Failed to close file, error: %s", err)
+		cerr := archive.Close()
+		if err == nil {
+			err = cerr
 		}
 	}()
 
@@ -45,8 +46,8 @@ func downloadBundle(bundleURL string) (string, error) {
 	return archive.Name(), nil
 }
 
-func runRequest(bundleURL string, output io.Writer) error {
-	if err := retry.Times(3).Wait(5 * time.Second).Try(func(attempt uint) error {
+func runRequest(bundleURL string, output io.Writer) (err error) {
+	if err = retry.Times(3).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.TWarnf("%d query attempt failed", attempt)
 		}
@@ -54,8 +55,9 @@ func runRequest(bundleURL string, output io.Writer) error {
 		resp, err := http.Get(bundleURL)
 
 		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				log.Warnf("Failed to close http resonse body, error: %s", err)
+			cerr := resp.Body.Close()
+			if err == nil {
+				err = cerr
 			}
 		}()
 

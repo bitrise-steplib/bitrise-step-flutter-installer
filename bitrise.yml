@@ -22,12 +22,20 @@ workflows:
         - path: ./_tmp
         - is_create_path: true
     - path::./:
+        run_if: true
         title: git install default
     - path::./:
+        run_if: true
         title: git install dev
         inputs:
         - version: "dev"
+    - path::./:
+        run_if: true
+        title: git install specific version
+        inputs:
+        - version: "v1.7.1"
     - script:
+        run_if: true
         title: set platform specific bundle URL
         inputs:
          - content: |-

@@ -23,6 +23,7 @@ workflows:
         - is_create_path: true
     after_run:
     - test-git-default
+    - test-git-default-force-update
     - test-bundle
     - test-git-branch
     - test-git-tag
@@ -32,6 +33,15 @@ workflows:
     - path::./:
         run_if: true
         title: git install default
+
+  test-git-default-force-update:
+    steps:
+    - path::./:
+        run_if: true
+        title: git install stable force update
+        inputs:
+          - version: "stable"
+          - is_update: "true"
 
   test-bundle:
     steps:

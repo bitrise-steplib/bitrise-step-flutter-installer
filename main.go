@@ -152,6 +152,15 @@ func main() {
 	log.Donef("Added to $PATH")
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
+	if cfg.IsDebug {
+		treeCmd := command.New("tree", sdkLocation).SetStdout(os.Stdout).SetStderr(os.Stderr)
+		log.Donef("$ %s", treeCmd.PrintableCommandArgs())
+		fmt.Println()
+		if err := treeCmd.Run(); err != nil {
+			log.Warnf("Failed to run tree, error: %s", err)
+		}
+	}
+
 	fmt.Println()
 	log.Infof("Flutter version")
 	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
@@ -164,13 +173,6 @@ func main() {
 	if cfg.IsDebug {
 		if err := runFlutterDoctor(); err != nil {
 			failf("%s", err)
-		}
-
-		treeCmd := command.New("tree", sdkLocation).SetStdout(os.Stdout).SetStderr(os.Stderr)
-		log.Donef("$ %s", versionCmd.PrintableCommandArgs())
-		fmt.Println()
-		if err := treeCmd.Run(); err != nil {
-			log.Warnf("Failed to run tree, error: %s", err)
 		}
 	}
 }

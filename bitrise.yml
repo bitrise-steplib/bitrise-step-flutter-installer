@@ -21,21 +21,21 @@ workflows:
         inputs:
         - path: ./_tmp
         - is_create_path: true
+    after_run:
+    - test-git-default
+    - test-bundle
+    - test-git-branch
+    - test-git-tag
+
+  test-git-default:
+    steps:
     - path::./:
         run_if: true
         title: git install default
-    - path::./:
-        run_if: true
-        title: git install dev
-        inputs:
-        - version: "dev"
-    - path::./:
-        run_if: true
-        title: git install specific version
-        inputs:
-        - version: "v1.7.1"
+
+  test-bundle:
+    steps:
     - script:
-        run_if: true
         title: set platform specific bundle URL
         inputs:
          - content: |-
@@ -57,6 +57,22 @@ workflows:
           opts:
             is_expand: true
         - is_debug: true
+
+  test-git-branch:
+    steps:
+    - path::./:
+        run_if: true
+        title: git install dev
+        inputs:
+        - version: "dev"
+
+  test-git-tag:
+    steps:
+    - path::./:
+        run_if: true
+        title: git install specific version
+        inputs:
+        - version: "v1.7.1"
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

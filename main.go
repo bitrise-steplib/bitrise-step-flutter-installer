@@ -13,7 +13,6 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/mholt/archiver"
 )
 
 type config struct {
@@ -97,37 +96,29 @@ func main() {
 	log.Infof("Downloading Flutter SDK")
 	fmt.Println()
 
-	sdkLocation := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
-	sdkLocationWithFlutterDir := filepath.Join(sdkLocation, "flutter")
+	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
+	sdkFlutterPath := filepath.Join(sdkPathParent, "flutter")
+
+	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
+	if err := os.RemoveAll(sdkPathParent); err != nil {
+		failf("Failed to remove path(%s), error: %s", sdkPathParent, err)
+	}
+
+	if err := os.MkdirAll(sdkPathParent, 0770); err != nil {
+		failf("failed to create folder (%s), error: %s", sdkPathParent, err)
+	}
 
 	if bundleSpecified {
-		log.Printf("Cleaning SDK target path: %s", sdkLocation)
-		if err := os.RemoveAll(sdkLocation); err != nil {
-			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
-		}
-
 		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
-		archivePath, err := downloadBundle(cfg.BundleURL)
-		if err != nil {
-			failf("failed to download bundle, error: %s", err)
-		}
-
-		if err := archiver.Unarchive(archivePath, sdkLocation); err != nil {
-			// A warning to avoid error with official installer bundle on linux:
-			// reading file in tar archive: ... making hard link for: link ... :no such file or directory
-			log.Warnf("failed to unarchive, error: %s", err)
+		if err := unarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
+			failf("failed to download and unarchive bundle, error: %s", err)
 		}
 	} else {
-		log.Printf("Cleaning SDK target path: %s", sdkLocation)
-		if err := os.RemoveAll(sdkLocation); err != nil {
-			failf("Failed to remove path(%s), error: %s", sdkLocation, err)
-		}
-
 		log.Infof("Cloning Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
 
 		// repository name ('flutter') is in the path, will be checked out there
-		gitRepo, err := git.New(sdkLocationWithFlutterDir)
+		gitRepo, err := git.New(sdkFlutterPath)
 		if err != nil {
 			failf("Failed to open git repo, error: %s", err)
 		}
@@ -140,7 +131,7 @@ func main() {
 	log.Printf("Adding flutter bin directory to $PATH")
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
-	path := filepath.Join(sdkLocationWithFlutterDir, "bin") + ":" + os.Getenv("PATH")
+	path := filepath.Join(sdkFlutterPath, "bin") + ":" + os.Getenv("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}
@@ -153,7 +144,7 @@ func main() {
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
 	if cfg.IsDebug {
-		treeCmd := command.New("tree", sdkLocation).SetStdout(os.Stdout).SetStderr(os.Stderr)
+		treeCmd := command.New("tree", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", treeCmd.PrintableCommandArgs())
 		fmt.Println()
 		if err := treeCmd.Run(); err != nil {

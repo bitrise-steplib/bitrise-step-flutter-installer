@@ -2,51 +2,48 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path"
+	"strings"
 	"time"
 
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 )
 
-func downloadBundle(bundleURL string) (archivePath string, err error) {
+func unarchiveBundle(bundleURL, targetDir string) (err error) {
 	url, err := url.Parse(bundleURL)
 	if err != nil {
-		return "", fmt.Errorf("%s", err)
+		return fmt.Errorf("%s", err)
 	}
 
 	if url.Scheme != "https" {
-		return "", fmt.Errorf("invalid URL scheme: %s, expecting https", url.Scheme)
+		return fmt.Errorf("invalid URL scheme: %s, expecting https", url.Scheme)
 	}
+
 	const storageHost = "storage.googleapis.com"
 	if url.Host != storageHost {
-		return "", fmt.Errorf("invalid hostname, expecting %s", storageHost)
+		return fmt.Errorf("invalid hostname, expecting %s", storageHost)
 	}
 
-	archive, err := ioutil.TempFile("", "*"+path.Base(url.Path))
-	if err != nil {
-		return "", fmt.Errorf("%s", err)
+	const sep = "/"
+	pathParts := strings.Split(strings.TrimLeft(url.EscapedPath(), sep), sep)
+
+	const flutterPath = "flutter_infra"
+	if !(len(pathParts) > 0 && pathParts[0] == flutterPath) {
+		return fmt.Errorf("invalid path, expecting it to begin with: %s", flutterPath)
 	}
 
-	defer func() {
-		cerr := archive.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
-
-	if err := runRequest(bundleURL, archive); err != nil {
-		return "", fmt.Errorf("failed to download bundle, error: %s", err)
+	if err := runRequest(bundleURL, targetDir); err != nil {
+		return fmt.Errorf("failed to download bundle, error: %s", err)
 	}
-
-	return archive.Name(), nil
+	return nil
 }
 
-func runRequest(bundleURL string, output io.Writer) (err error) {
+func runRequest(bundleURL string, targetDir string) (err error) {
 	if err = retry.Times(3).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.TWarnf("%d query attempt failed", attempt)
@@ -65,13 +62,32 @@ func runRequest(bundleURL string, output io.Writer) (err error) {
 			return err
 		}
 
-		_, err = io.Copy(output, resp.Body)
-		if err != nil {
-			return err
+		if resp.StatusCode != http.StatusOK {
+			responseBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			return fmt.Errorf("query failed, status code: %d, response body: %s", resp.StatusCode, responseBody)
 		}
+
+		tarCmd, err := command.NewWithParams("tar", "-xf", "-", "-C", targetDir)
+		if err != nil {
+			return fmt.Errorf("failed to create command, error: %s", err)
+		}
+		tarCmd.SetStdin(resp.Body)
+
+		out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			if errorutil.IsExitStatusError(err) {
+				return fmt.Errorf("tar command failed: %s, out: %s", err, out)
+			}
+			return fmt.Errorf("failed to run tar command, error: %s", err)
+		}
+
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed to upload, error: %s", err)
+		return fmt.Errorf("%s", err)
 	}
 	return nil
 }

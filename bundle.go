@@ -20,6 +20,7 @@ func unarchiveBundle(bundleURL, targetDir string) (err error) {
 		return fmt.Errorf("%s", err)
 	}
 
+	// Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
 	if url.Scheme != "https" {
 		return fmt.Errorf("invalid URL scheme: %s, expecting https", url.Scheme)
 	}
@@ -52,9 +53,11 @@ func runRequest(bundleURL string, targetDir string) (err error) {
 		resp, err := http.Get(bundleURL)
 
 		defer func() {
-			cerr := resp.Body.Close()
-			if err == nil {
-				err = cerr
+			if resp.Body != nil {
+				cerr := resp.Body.Close()
+				if err == nil {
+					err = cerr
+				}
 			}
 		}()
 
@@ -88,7 +91,7 @@ func runRequest(bundleURL string, targetDir string) (err error) {
 
 		return nil
 	}); err != nil {
-		return fmt.Errorf("%s", err)
+		return err
 	}
 	return nil
 }

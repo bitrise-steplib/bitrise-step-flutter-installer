@@ -16,9 +16,12 @@ import (
 )
 
 type config struct {
-	Version   string `env:"version"`
+	Version  string `env:"version"`
+	IsUpdate bool   `env:"is_update,required"`
+
 	BundleURL string `env:"installation_bundle_url"`
-	IsDebug   bool   `env:"is_debug,required"`
+
+	IsDebug bool `env:"is_debug,required"`
 }
 
 func failf(msg string, args ...interface{}) {
@@ -43,14 +46,15 @@ func main() {
 	if err := stepconf.Parse(&cfg); err != nil {
 		failf("Issue with input: %s", err)
 	}
+	stepconf.Print(cfg)
+
 	bundleSpecified := strings.TrimSpace(cfg.BundleURL) != ""
 	gitBranchSpecified := strings.TrimSpace(cfg.Version) != ""
 	if !bundleSpecified && !gitBranchSpecified {
-		log.Errorf(`One of the following inputs needs to be specified:
+		failf(`One of the following inputs needs to be specified:
 "Flutter SDK git repository version" (version)
 "Flutter SDK installation bundle URL" (installation_bundle_url)`)
 	}
-	stepconf.Print(cfg)
 	fmt.Println()
 
 	log.SetEnableDebugLog(cfg.IsDebug)
@@ -81,9 +85,9 @@ func main() {
 	}
 
 	requiredVersion := strings.TrimSpace(cfg.Version)
-	if preInstalled && !bundleSpecified && requiredVersion == versionInfo.channel && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
+	if !cfg.IsUpdate && preInstalled && !bundleSpecified && requiredVersion == versionInfo.channel && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
 		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.", requiredVersion, versionInfo.channel)
-
+		log.Infof(`Set input "Update to the latest version (is_update)" to "true" to use the latest version from channel %s.`, requiredVersion)
 		if cfg.IsDebug {
 			if err := runFlutterDoctor(); err != nil {
 				failf("%s", err)

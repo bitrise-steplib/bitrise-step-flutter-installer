@@ -20,6 +20,7 @@ deps:
   - name: git
   apt_get:
   - name: git
+  - name: tar
 
 toolkit:
   go:
@@ -42,7 +43,7 @@ inputs:
         To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
       is_required: false
 
-  - is_update: "false"
+  - is_update: "true"
     opts:
       title: Update to the latest version
       summary: Set to true to update, if Flutter from a matching channel is preinstalled.

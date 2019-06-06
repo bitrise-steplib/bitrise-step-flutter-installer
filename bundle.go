@@ -71,7 +71,8 @@ func runRequest(bundleURL string, targetDir string) (err error) {
 			return fmt.Errorf("query failed, status code: %d, response body: %s", resp.StatusCode, responseBody)
 		}
 
-		tarCmd, err := command.NewWithParams("tar", "-xf", "-", "-C", targetDir)
+		// using -J to support tar.xz
+		tarCmd, err := command.NewWithParams("tar", "-xJf", "-", "-C", targetDir)
 		if err != nil {
 			return fmt.Errorf("failed to create command, error: %s", err)
 		}

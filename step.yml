@@ -37,9 +37,9 @@ inputs:
 
         If the input Flutter SDK installation bundle URL is specified, this input is ignored.
 
-        To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)
+        To find the available version tags see this list: [https://github.com/flutter/flutter/releases]()
 
-        To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
+        To see the the avilable branches visit: [https://github.com/flutter/flutter/branches]()
       is_required: false
 
   - installation_bundle_url: ""
@@ -49,11 +49,15 @@ inputs:
       description: |-
         If using a channel othee than stable, installation bundle URL is the faster than using the Flutter git repository.
 
-        Example value (beta channel, version 1.6.3, macOS): "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
+        Example value (beta channel, version 1.6.3, macOS): [https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip]()
 
-        Official list of Flutter installation bundles: https://flutter.dev/docs/development/tools/sdk/releases?tab=macos
+        Official list of Flutter installation bundles: [https://flutter.dev/docs/development/tools/sdk/releases?tab=macos]()
       is_required: false
 
-  - is_debug: false
+  - is_debug: "false"
     opts:
-      title: Run flutter doctor for debug purpuses
+      title: Print debug information
+      summary: If enabled will run flutter doctor and print value of PATH eniroment variable.
+      value_options:
+      - "true"
+      - "false"

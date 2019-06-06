@@ -54,6 +54,8 @@ func main() {
 	stepconf.Print(cfg)
 	fmt.Println()
 
+	log.SetEnableDebugLog(cfg.IsDebug)
+
 	if bundleSpecified && gitBranchSpecified {
 		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
 	}
@@ -136,23 +138,19 @@ func main() {
 	}
 
 	log.Printf("Adding flutter bin directory to $PATH")
-	if cfg.IsDebug {
-		log.Debugf("PATH: %s", os.Getenv("PATH"))
-	}
+	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
 	path := filepath.Join(sdkLocationWithFlutterDir, "bin") + ":" + os.Getenv("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}
 
-	if cfg.IsDebug {
-		log.Debugf("PATH: %s", os.Getenv("PATH"))
-	}
-
 	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
 		failf("Failed to export env with envman, error: %s", err)
 	}
+
 	log.Donef("Added to $PATH")
+	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
 	fmt.Println()
 	log.Infof("Flutter version")
@@ -166,6 +164,13 @@ func main() {
 	if cfg.IsDebug {
 		if err := runFlutterDoctor(); err != nil {
 			failf("%s", err)
+		}
+
+		treeCmd := command.New("tree", sdkLocation).SetStdout(os.Stdout).SetStderr(os.Stderr)
+		log.Donef("$ %s", versionCmd.PrintableCommandArgs())
+		fmt.Println()
+		if err := treeCmd.Run(); err != nil {
+			log.Warnf("Failed to run tree, error: %s", err)
 		}
 	}
 }

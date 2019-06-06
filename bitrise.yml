@@ -56,7 +56,7 @@ workflows:
         - installation_bundle_url: $BUNDLE_URL
           opts:
             is_expand: true
-        - is_debug: true
+        - is_debug: false
 
   test-git-branch:
     steps:

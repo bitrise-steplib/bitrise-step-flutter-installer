@@ -45,7 +45,7 @@ func unarchiveBundle(bundleURL, targetDir string) (err error) {
 }
 
 func runRequest(bundleURL string, targetDir string) (err error) {
-	if err = retry.Times(3).Wait(5 * time.Second).Try(func(attempt uint) error {
+	if err = retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.TWarnf("%d query attempt failed", attempt)
 		}

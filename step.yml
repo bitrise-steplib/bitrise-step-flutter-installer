@@ -18,6 +18,7 @@ run_if: .IsCI
 deps:
   brew:
   - name: git
+  - name: tar
   apt_get:
   - name: git
   - name: tar

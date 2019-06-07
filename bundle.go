@@ -45,7 +45,7 @@ func unarchiveBundle(bundleURL, targetDir string) (err error) {
 }
 
 func runRequest(bundleURL string, targetDir string) (err error) {
-	if err = retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
+	return retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
 			log.TWarnf("%d query attempt failed", attempt)
 		}
@@ -57,7 +57,9 @@ func runRequest(bundleURL string, targetDir string) (err error) {
 				cerr := resp.Body.Close()
 				if err == nil {
 					err = cerr
+					return
 				}
+				log.Warnf("failed to close response body, error: %s", cerr)
 			}
 		}()
 
@@ -90,8 +92,5 @@ func runRequest(bundleURL string, targetDir string) (err error) {
 		}
 
 		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }

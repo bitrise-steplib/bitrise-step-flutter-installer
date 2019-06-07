@@ -14,7 +14,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:85952677dc5b4a4a1dbef99e38994927cd8355aac6edc18584a444aee042a6a0"
+  digest = "1:ac722524a9414fdf455e91d504ef5c706234fee1197543eced04355a701d6902"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "colorstring",
@@ -25,10 +25,11 @@
     "parseutil",
     "pathutil",
     "pointers",
+    "retry",
     "sliceutil",
   ]
   pruneopts = "UT"
-  revision = "2a09aab8380d7842750328aebd5671bcccea89c8"
+  revision = "8898129615c9e407fc6b0e60ea882f2b18ec4dc2"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -38,7 +39,9 @@
     "github.com/bitrise-io/go-steputils/tools",
     "github.com/bitrise-io/go-utils/command",
     "github.com/bitrise-io/go-utils/command/git",
+    "github.com/bitrise-io/go-utils/errorutil",
     "github.com/bitrise-io/go-utils/log",
+    "github.com/bitrise-io/go-utils/retry",
     "github.com/bitrise-io/go-utils/sliceutil",
   ]
   solver-name = "gps-cdcl"

@@ -64,10 +64,12 @@ func main() {
 	}
 
 	preInstalled := true
-	_, err := exec.LookPath("flutter")
+	flutterBinPath, err := exec.LookPath("flutter")
 	if err != nil {
 		preInstalled = false
 		log.Printf("Flutter is not preinstalled.")
+	} else {
+		log.Infof("Preinstalled Flutter binary path: %s", flutterBinPath)
 	}
 
 	var versionInfo flutterVersion
@@ -88,11 +90,13 @@ func main() {
 	if !cfg.IsUpdate && preInstalled && !bundleSpecified && requiredVersion == versionInfo.channel && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
 		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.", requiredVersion, versionInfo.channel)
 		log.Infof(`Set input "Update to the latest version (is_update)" to "true" to use the latest version from channel %s.`, requiredVersion)
+
 		if cfg.IsDebug {
 			if err := runFlutterDoctor(); err != nil {
 				failf("%s", err)
 			}
 		}
+
 		return
 	}
 
@@ -101,7 +105,7 @@ func main() {
 	fmt.Println()
 
 	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
-	sdkFlutterPath := filepath.Join(sdkPathParent, "flutter")
+	flutterSDKPath := filepath.Join(sdkPathParent, "flutter")
 
 	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
 	if err := os.RemoveAll(sdkPathParent); err != nil {
@@ -118,11 +122,18 @@ func main() {
 		if err := unarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
 			failf("failed to download and unarchive bundle, error: %s", err)
 		}
+
+		// Bundles have the .pub-cache directory included, but would like to use the default location (HOME/.pub-cache),
+		// for consistency as Flutter deps are cached.
+		bundleSystemCachePath := filepath.Join(flutterSDKPath, ".pub-cache")
+		if err := os.RemoveAll(bundleSystemCachePath); err != nil {
+			failf("Failed to remove path(%s), error: %s", bundleSystemCachePath, err)
+		}
 	} else {
 		log.Infof("Cloning Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
 
 		// repository name ('flutter') is in the path, will be checked out there
-		gitRepo, err := git.New(sdkFlutterPath)
+		gitRepo, err := git.New(flutterSDKPath)
 		if err != nil {
 			failf("Failed to open git repo, error: %s", err)
 		}
@@ -135,7 +146,7 @@ func main() {
 	log.Printf("Adding flutter bin directory to $PATH")
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
-	path := filepath.Join(sdkFlutterPath, "bin") + ":" + os.Getenv("PATH")
+	path := filepath.Join(flutterSDKPath, "bin") + ":" + os.Getenv("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}
@@ -148,6 +159,12 @@ func main() {
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
 	if cfg.IsDebug {
+		flutterBinPath, err := exec.LookPath("flutter")
+		if err != nil {
+			failf("Failed to get Flutter binary path")
+		}
+		log.Infof("Flutter binary path: %s", flutterBinPath)
+
 		treeCmd := command.New("tree", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", treeCmd.PrintableCommandArgs())
 		fmt.Println()

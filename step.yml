@@ -75,6 +75,7 @@ inputs:
 
   - is_debug: "false"
     opts:
+      category: Debug
       title: Print debug information
       summary: If enabled will run flutter doctor and print value of PATH eniroment variable.
       description: If enabled will run flutter doctor and print value of PATH eniroment variable.

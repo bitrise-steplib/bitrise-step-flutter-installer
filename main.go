@@ -60,7 +60,8 @@ func main() {
 	log.SetEnableDebugLog(cfg.IsDebug)
 
 	if bundleSpecified && gitBranchSpecified {
-		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
+		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, " +
+			"using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
 	}
 
 	preInstalled := true
@@ -87,9 +88,13 @@ func main() {
 	}
 
 	requiredVersion := strings.TrimSpace(cfg.Version)
-	if !cfg.IsUpdate && preInstalled && !bundleSpecified && requiredVersion == versionInfo.channel && sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
-		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.", requiredVersion, versionInfo.channel)
-		log.Infof(`Set input "Update to the latest version (is_update)" to "true" to use the latest version from channel %s.`, requiredVersion)
+	if !cfg.IsUpdate && preInstalled && !bundleSpecified &&
+		requiredVersion == versionInfo.channel &&
+		sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
+		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.",
+			requiredVersion, versionInfo.channel)
+		log.Infof(`Set input "Update to the latest version (is_update)" to "true"
+to use the latest version from channel %s.`, requiredVersion)
 
 		if cfg.IsDebug {
 			if err := runFlutterDoctor(); err != nil {
@@ -122,15 +127,9 @@ func main() {
 		if err := unarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
 			failf("failed to download and unarchive bundle, error: %s", err)
 		}
-
-		// Bundles have the .pub-cache directory included, but would like to use the default location (HOME/.pub-cache),
-		// for consistency as Flutter deps are cached.
-		bundleSystemCachePath := filepath.Join(flutterSDKPath, ".pub-cache")
-		if err := os.RemoveAll(bundleSystemCachePath); err != nil {
-			failf("Failed to remove path(%s), error: %s", bundleSystemCachePath, err)
-		}
 	} else {
-		log.Infof("Cloning Flutter from the git repositry (https://github.com/flutter/flutter.git), selected branch/tag: %s", cfg.Version)
+		log.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
+		log.Infof("Selected branch/tag: %s", cfg.Version)
 
 		// repository name ('flutter') is in the path, will be checked out there
 		gitRepo, err := git.New(flutterSDKPath)

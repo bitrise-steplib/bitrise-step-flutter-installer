@@ -1,12 +1,9 @@
 title: Flutter Install
-summary: |-
-  This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
-
-  Use this step *before* the cache-pull step to make sure Flutter dependency caching works correctly.
+summary: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK. Use this step *before* the cache-pull step to make sure pub caching is working correctly.
 description: |-
   This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
 
-  Use this step *before* the cache-pull step to make sure Flutter dependency caching works correctly.
+  Use this step *before* the cache-pull step to make sure pub caching is working correctly.
 website: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 source_code_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 support_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer/issues

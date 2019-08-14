@@ -1,6 +1,9 @@
 title: Flutter Install
-summary: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
-description: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
+summary: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK. Use this step *before* the cache-pull step to make sure pub caching is working correctly.
+description: |-
+  This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
+
+  Use this step *before* the cache-pull step to make sure pub caching is working correctly.
 website: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 source_code_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 support_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer/issues
@@ -75,6 +78,7 @@ inputs:
 
   - is_debug: "false"
     opts:
+      category: Debug
       title: Print debug information
       summary: If enabled will run flutter doctor and print value of PATH eniroment variable.
       description: If enabled will run flutter doctor and print value of PATH eniroment variable.

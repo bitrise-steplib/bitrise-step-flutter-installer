@@ -1,9 +1,25 @@
 title: Flutter Install
-summary: This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK. Use this step *before* the cache-pull step to make sure pub caching is working correctly.
+summary: Install Flutter SDK.
 description: |-
-  This step will git clone the selected branch or tag of the official Flutter repository and will run the initial setup of the Flutter SDK.
+  This Step git clones the selected branch or tag of the official Flutter repository and runs the initial setup of the Flutter SDK.
+  Use this step *before* the cache-pull step to make sure caching works correctly.
+  
+  ### Configuring the Step
+  1. In the **Flutter SDK git repository version** input set the tag or branch of the Flutter. The default value is `stable` which clones and installs the latest stable Flutter branch.
+  2. In the **Update to the latest version** input select `false` to use a preinstalled Flutter version or `true` to update Flutter SDK to the latest version released in the [build release channel](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels). By default, this input is set to `true`.
+  4. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
+  
+  ### Troubleshooting
+  If you prefer to install Flutter from an installation bundle instead of the git repository, use the **Flutter SDK installation bundle URL** input. Insert the URL of the preferred [bundle](https://flutter.dev/docs/development/tools/sdk/releases), for example, `https://storage.googleapis.com/flutter_infra/releases/dev/windows/flutter_windows_v1.14.5-dev.zip`. If the input is filled out correctly, it overrides the value set in the **Flutter SDK git repository version** input.
 
-  Use this step *before* the cache-pull step to make sure pub caching is working correctly.
+  ### Useful links
+  - [About Flutter build release channels](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels)
+  - [Available version tags](https://github.com/flutter/flutter/releases)
+  - [Available branches](https://github.com/flutter/flutter/branches)
+
+  ### Related Steps
+  - [Flutter Test](https://www.bitrise.io/integrations/steps/flutter-test)
+  - [Flutter Build](https://www.bitrise.io/integrations/steps/flutter-build)
 website: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 source_code_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer
 support_url: https://github.com/bitrise-steplib/bitrise-step-flutter-installer/issues

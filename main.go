@@ -145,7 +145,11 @@ to use the latest version from channel %s.`, requiredVersion)
 	log.Printf("Adding flutter bin directory to $PATH")
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
-	path := filepath.Join(flutterSDKPath, "bin") + ":" + os.Getenv("PATH")
+	path := filepath.Join(flutterSDKPath, "bin")
+	path += ":" + filepath.Join(flutterSDKPath, "bin", "cache", "dart-sdk", "bin")
+	path += ":" + filepath.Join(os.Getenv("HOME"), ".pub-cache", "bin")
+	path += ":" + os.Getenv("PATH")
+
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}

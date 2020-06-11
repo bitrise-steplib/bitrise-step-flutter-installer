@@ -130,9 +130,20 @@ workflows:
 
             echo "cleanup flutter sdk: $flutter_sdk_dir"
 
+            set +e
+
             rm -rf "$flutter_sdk_dir"
 
-            set +e
+            if [ $? == "1" ]; then
+              echo "flutter sdk cleanup failed, trying with sudo"
+              
+              sudo rm -rf "$flutter_sdk_dir"
+
+              if [ $? == "1" ]; then
+                echo "flutter sdk cleanup failed"
+                exit 1
+              fi
+            fi
 
             flutter_bin_path="$(which flutter)"
             if [ $? == "0" ]; then

@@ -28,47 +28,6 @@ workflows:
     - test-git-branch
     - test-git-tag
 
-  _remove_flutter:
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -x
-
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "1" ]; then
-              echo "flutter not installed"
-              exit 0
-            fi
-
-            set -e
-
-            flutter_bin_dir="$(dirname "$flutter_bin_path")"
-            flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
-
-            echo "cleanup flutter sdk: $flutter_sdk_dir"
-
-            rm -rf "$flutter_sdk_dir"
-
-            set +e
-            
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "0" ]; then
-              echo "flutter sdk cleanup failed"
-              exit 1
-            fi
-
-  _test_flutter_installation:
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -ex
-
-            flutter --version
-
   test-git-default:
     before_run:
     - _remove_flutter
@@ -149,6 +108,64 @@ workflows:
         inputs:
         - version: "v1.7.1"
         - is_debug: "true"
+
+  _remove_flutter:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -x
+
+            flutter_bin_path="$(which flutter)"
+            if [ $? == "1" ]; then
+              echo "flutter not installed"
+              exit 0
+            fi
+
+            set -e
+
+            flutter_bin_dir="$(dirname "$flutter_bin_path")"
+            flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
+
+            echo "cleanup flutter sdk: $flutter_sdk_dir"
+
+            rm -rf "$flutter_sdk_dir"
+
+            set +e
+
+            flutter_bin_path="$(which flutter)"
+            if [ $? == "0" ]; then
+              echo "flutter sdk cleanup failed"
+              exit 1
+            fi
+
+  _test_flutter_installation:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+
+            flutter --version
+
+  # ----------------------------------------------------------------
+  # --- Utility workflows
+  dep-update:
+    title: Dep update
+    description: |
+      Used for updating bitrise dependencies with dep
+    steps:
+    - script:
+        title: Dependency update
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            go get -u -v github.com/golang/dep/cmd/dep
+            dep ensure -v
+            dep ensure -v -update
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

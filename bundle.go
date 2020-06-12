@@ -102,7 +102,6 @@ func unarchiveBundle(tarPth, targetDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create command, error: %s", err)
 	}
-	// tarCmd.SetStdin(resp.Body)
 
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)

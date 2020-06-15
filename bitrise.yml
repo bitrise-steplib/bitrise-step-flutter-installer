@@ -29,12 +29,22 @@ workflows:
     - test-git-tag
 
   test-git-default:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
     steps:
     - path::./:
         run_if: true
         title: git install default
+        inputs:
+        - is_debug: "true"
 
   test-git-default-force-update:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
     steps:
     - path::./:
         run_if: true
@@ -42,8 +52,13 @@ workflows:
         inputs:
           - version: "stable"
           - is_update: "true"
+          - is_debug: "true"
 
   test-bundle:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
     steps:
     - script:
         title: set platform specific bundle URL
@@ -66,23 +81,102 @@ workflows:
         - installation_bundle_url: $BUNDLE_URL
           opts:
             is_expand: true
-        - is_debug: false
+        - is_debug: "true"
 
   test-git-branch:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
     steps:
     - path::./:
         run_if: true
         title: git install dev
         inputs:
         - version: "dev"
+        - is_debug: "true"
 
   test-git-tag:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
     steps:
     - path::./:
         run_if: true
         title: git install specific version
         inputs:
         - version: "v1.7.1"
+        - is_debug: "true"
+
+  _remove_flutter:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -x
+
+            flutter_bin_path="$(which flutter)"
+            if [ $? == "1" ]; then
+              echo "flutter not installed"
+              exit 0
+            fi
+
+            set -e
+
+            flutter_bin_dir="$(dirname "$flutter_bin_path")"
+            flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
+
+            echo "cleanup flutter sdk: $flutter_sdk_dir"
+
+            set +e
+
+            rm -rf "$flutter_sdk_dir"
+
+            if [ $? == "1" ]; then
+              echo "flutter sdk cleanup failed, trying with sudo"
+              
+              sudo rm -rf "$flutter_sdk_dir"
+
+              if [ $? == "1" ]; then
+                echo "flutter sdk cleanup failed"
+                exit 1
+              fi
+            fi
+
+            flutter_bin_path="$(which flutter)"
+            if [ $? == "0" ]; then
+              echo "flutter sdk cleanup failed"
+              exit 1
+            fi
+
+  _test_flutter_installation:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+
+            flutter --version
+
+  # ----------------------------------------------------------------
+  # --- Utility workflows
+  dep-update:
+    title: Dep update
+    description: |
+      Used for updating bitrise dependencies with dep
+    steps:
+    - script:
+        title: Dependency update
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            go get -u -v github.com/golang/dep/cmd/dep
+            dep ensure -v
+            dep ensure -v -update
 
   # ----------------------------------------------------------------
   # --- workflows to Share this step into a Step Library

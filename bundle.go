@@ -86,7 +86,7 @@ func downloadBundle(bundleURL string) (string, error) {
 	}
 
 	sdkTarPth := filepath.Join(tmpDir, "flutter.tar")
-	f, err := os.Open(sdkTarPth)
+	f, err := os.Create(sdkTarPth)
 	if err != nil {
 		return "", err
 	}

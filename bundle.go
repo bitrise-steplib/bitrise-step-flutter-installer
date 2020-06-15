@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
@@ -85,11 +86,16 @@ func downloadBundle(bundleURL string) (string, error) {
 	}
 
 	sdkTarPth := filepath.Join(tmpDir, "flutter.tar")
-	body, err := ioutil.ReadAll(resp.Body)
+	f, err := os.Open(sdkTarPth)
 	if err != nil {
 		return "", err
 	}
-	if err := fileutil.WriteBytesToFile(sdkTarPth, body); err != nil {
+
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return "", err
+	}
+
+	if err := resp.Body.Close(); err != nil {
 		return "", err
 	}
 

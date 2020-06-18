@@ -147,6 +147,7 @@ to use the latest version from channel %s.`, requiredVersion)
 
 	path := filepath.Join(flutterSDKPath, "bin")
 	path += ":" + filepath.Join(flutterSDKPath, "bin", "cache", "dart-sdk", "bin")
+	path += ":" + filepath.Join(flutterSDKPath, ".pub-cache", "bin")
 	path += ":" + filepath.Join(os.Getenv("HOME"), ".pub-cache", "bin")
 	path += ":" + os.Getenv("PATH")
 

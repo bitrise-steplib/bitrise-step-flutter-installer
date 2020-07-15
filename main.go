@@ -124,7 +124,7 @@ to use the latest version from channel %s.`, requiredVersion)
 	if bundleSpecified {
 		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
-		if err := unarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
+		if err := downloadAndUnarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
 			failf("failed to download and unarchive bundle, error: %s", err)
 		}
 	} else {
@@ -145,7 +145,12 @@ to use the latest version from channel %s.`, requiredVersion)
 	log.Printf("Adding flutter bin directory to $PATH")
 	log.Debugf("PATH: %s", os.Getenv("PATH"))
 
-	path := filepath.Join(flutterSDKPath, "bin") + ":" + os.Getenv("PATH")
+	path := filepath.Join(flutterSDKPath, "bin")
+	path += ":" + filepath.Join(flutterSDKPath, "bin", "cache", "dart-sdk", "bin")
+	path += ":" + filepath.Join(flutterSDKPath, ".pub-cache", "bin")
+	path += ":" + filepath.Join(os.Getenv("HOME"), ".pub-cache", "bin")
+	path += ":" + os.Getenv("PATH")
+
 	if err := os.Setenv("PATH", path); err != nil {
 		failf("Failed to set env, error: %s", err)
 	}

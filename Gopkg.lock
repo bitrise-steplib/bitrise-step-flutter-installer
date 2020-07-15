@@ -3,24 +3,25 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e875a94349b121ca6fa86bd72f7593f7f0e6f0d07a7d664f31fc000d80eaeec3"
+  digest = "1:ba6694e16cc02ad534ba0e2443323379159c978bbba876b01a7286c326cafeb8"
   name = "github.com/bitrise-io/go-steputils"
   packages = [
     "stepconf",
     "tools",
   ]
   pruneopts = "UT"
-  revision = "cecc766da84859e37e780d9d1c416f0f3993e6b1"
+  revision = "94490ca44ddb645764676a94988f6fc7e3187383"
 
 [[projects]]
   branch = "master"
-  digest = "1:ac722524a9414fdf455e91d504ef5c706234fee1197543eced04355a701d6902"
+  digest = "1:a7b15eb987579c8fce984f691649d8ec46b5b9d1542ca5149218170990ccc3ce"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "colorstring",
     "command",
     "command/git",
     "errorutil",
+    "fileutil",
     "log",
     "parseutil",
     "pathutil",
@@ -29,7 +30,7 @@
     "sliceutil",
   ]
   pruneopts = "UT"
-  revision = "8898129615c9e407fc6b0e60ea882f2b18ec4dc2"
+  revision = "e212188d99b41373b4ff8b69e7b1f677bc427bde"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -40,7 +41,9 @@
     "github.com/bitrise-io/go-utils/command",
     "github.com/bitrise-io/go-utils/command/git",
     "github.com/bitrise-io/go-utils/errorutil",
+    "github.com/bitrise-io/go-utils/fileutil",
     "github.com/bitrise-io/go-utils/log",
+    "github.com/bitrise-io/go-utils/pathutil",
     "github.com/bitrise-io/go-utils/retry",
     "github.com/bitrise-io/go-utils/sliceutil",
   ]

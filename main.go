@@ -32,7 +32,7 @@ func failf(msg string, args ...interface{}) {
 func runFlutterDoctor() error {
 	fmt.Println()
 	log.Infof("Check flutter doctor")
-	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
+	doctorCmd := command.New("flutter", "doctor", "-v").SetStdout(os.Stdout).SetStderr(os.Stderr)
 	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 	fmt.Println()
 	if err := doctorCmd.Run(); err != nil {

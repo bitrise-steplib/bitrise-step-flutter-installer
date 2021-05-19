@@ -19,7 +19,7 @@ import (
 )
 
 func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
-	if err := validateFlutterUrl(bundleURL); err != nil {
+	if err := validateFlutterURL(bundleURL); err != nil {
 		return err
 	}
 
@@ -37,23 +37,23 @@ func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
 /*
 Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
 */
-func validateFlutterUrl(bundleURL string) error {
-	flutterUrl, err := url.Parse(bundleURL)
+func validateFlutterURL(bundleURL string) error {
+	flutterURL, err := url.Parse(bundleURL)
 	if err != nil {
 		return err
 	}
 
-	if flutterUrl.Scheme != "https" {
-		return fmt.Errorf("invalid URL scheme: %s, expecting https", flutterUrl.Scheme)
+	if flutterURL.Scheme != "https" {
+		return fmt.Errorf("invalid URL scheme: %s, expecting https", flutterURL.Scheme)
 	}
 
 	const storageHost = "storage.googleapis.com"
-	if flutterUrl.Host != storageHost {
+	if flutterURL.Host != storageHost {
 		return fmt.Errorf("invalid hostname, expecting %s", storageHost)
 	}
 
 	const sep = "/"
-	pathParts := strings.Split(strings.TrimLeft(flutterUrl.EscapedPath(), sep), sep)
+	pathParts := strings.Split(strings.TrimLeft(flutterURL.EscapedPath(), sep), sep)
 	foundMatch := false
 	flutterPaths := []string{"flutter_infra", "flutter_infra_release"}
 	if len(pathParts) > 0 {

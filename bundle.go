@@ -19,27 +19,8 @@ import (
 )
 
 func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
-	url, err := url.Parse(bundleURL)
-	if err != nil {
-		return fmt.Errorf("%s", err)
-	}
-
-	// Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
-	if url.Scheme != "https" {
-		return fmt.Errorf("invalid URL scheme: %s, expecting https", url.Scheme)
-	}
-
-	const storageHost = "storage.googleapis.com"
-	if url.Host != storageHost {
-		return fmt.Errorf("invalid hostname, expecting %s", storageHost)
-	}
-
-	const sep = "/"
-	pathParts := strings.Split(strings.TrimLeft(url.EscapedPath(), sep), sep)
-
-	const flutterPath = "flutter_infra"
-	if !(len(pathParts) > 0 && pathParts[0] == flutterPath) {
-		return fmt.Errorf("invalid path, expecting it to begin with: %s", flutterPath)
+	if err := validateFlutterUrl(bundleURL); err != nil {
+		return err
 	}
 
 	bundleTarPth, err := downloadBundle(bundleURL)
@@ -49,6 +30,43 @@ func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
 
 	if err := unarchiveBundle(bundleTarPth, targetDir); err != nil {
 		return err
+	}
+	return nil
+}
+
+/*
+Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
+*/
+func validateFlutterUrl(bundleURL string) error {
+	flutterUrl, err := url.Parse(bundleURL)
+	if err != nil {
+		return err
+	}
+
+	if flutterUrl.Scheme != "https" {
+		return fmt.Errorf("invalid URL scheme: %s, expecting https", flutterUrl.Scheme)
+	}
+
+	const storageHost = "storage.googleapis.com"
+	if flutterUrl.Host != storageHost {
+		return fmt.Errorf("invalid hostname, expecting %s", storageHost)
+	}
+
+	const sep = "/"
+	pathParts := strings.Split(strings.TrimLeft(flutterUrl.EscapedPath(), sep), sep)
+	foundMatch := false
+	flutterPaths := []string{"flutter_infra", "flutter_infra_release"}
+	if len(pathParts) > 0 {
+		path := pathParts[0]
+		for _, validPath := range flutterPaths {
+			if validPath == path {
+				foundMatch = true
+				break
+			}
+		}
+	}
+	if !foundMatch {
+		return fmt.Errorf("invalid path, expecting it to begin with one of: %v", flutterPaths)
 	}
 	return nil
 }

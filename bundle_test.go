@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func Test_validateFlutterUrl(t *testing.T) {
+func Test_validateFlutterURL(t *testing.T) {
 	tests := []struct {
 		name      string
 		bundleURL string

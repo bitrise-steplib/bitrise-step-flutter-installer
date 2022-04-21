@@ -41,6 +41,15 @@ func runFlutterDoctor() error {
 	return nil
 }
 
+func printDirOwner(flutterSDKPath string) {
+	dirOwnerCmd := command.NewWithStandardOuts("ls", "-al", flutterSDKPath)
+	log.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
+	fmt.Println()
+	if err := dirOwnerCmd.Run(); err != nil {
+		log.Warnf("Failed to run ls: %s", err)
+	}
+}
+
 func main() {
 	var cfg config
 	if err := stepconf.Parse(&cfg); err != nil {
@@ -112,6 +121,10 @@ to use the latest version from channel %s.`, requiredVersion)
 	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 	flutterSDKPath := filepath.Join(sdkPathParent, "flutter")
 
+	if cfg.IsDebug {
+		printDirOwner(sdkPathParent)
+	}
+
 	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
 	if err := os.RemoveAll(sdkPathParent); err != nil {
 		failf("Failed to remove path(%s), error: %s", sdkPathParent, err)
@@ -169,12 +182,14 @@ to use the latest version from channel %s.`, requiredVersion)
 		}
 		log.Infof("Flutter binary path: %s", flutterBinPath)
 
-		treeCmd := command.New("tree", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
+		treeCmd := command.New("tree", "-L", "3", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
 		log.Donef("$ %s", treeCmd.PrintableCommandArgs())
 		fmt.Println()
 		if err := treeCmd.Run(); err != nil {
-			log.Warnf("Failed to run tree, error: %s", err)
+			log.Warnf("Failed to run tree command: %s", err)
 		}
+
+		printDirOwner(flutterSDKPath)
 	}
 
 	fmt.Println()

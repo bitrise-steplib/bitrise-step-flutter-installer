@@ -122,11 +122,13 @@ func downloadBundle(bundleURL string) (string, error) {
 
 func unarchiveBundle(tarPth, targetDir string) error {
 	// using -J to support tar.xz
-	tarCmd, err := command.NewWithParams("tar", "-xJf", tarPth, "-C", targetDir)
+	tarCmd, err := command.NewWithParams("tar", "--no-same-owner", "-xJf", tarPth, "-C", targetDir)
 	if err != nil {
 		return fmt.Errorf("failed to create command, error: %s", err)
 	}
 
+	log.Donef("$ %s", tarCmd.PrintableCommandArgs())
+	fmt.Println()
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)
 	if err != nil {
@@ -134,16 +136,6 @@ func unarchiveBundle(tarPth, targetDir string) error {
 			return fmt.Errorf("tar command failed: %s, out: %s", err, out)
 		}
 		return fmt.Errorf("failed to run tar command, error: %s", err)
-	}
-
-	if err := filepath.WalkDir(targetDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		return os.Chown(path, os.Getuid(), os.Getegid())
-	}); err != nil {
-		return fmt.Errorf("failed to take ownership of flutter SDK directory: %w", err)
 	}
 
 	return nil

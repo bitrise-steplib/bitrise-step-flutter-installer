@@ -121,10 +121,6 @@ to use the latest version from channel %s.`, requiredVersion)
 	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
 	flutterSDKPath := filepath.Join(sdkPathParent, "flutter")
 
-	if cfg.IsDebug {
-		printDirOwner(sdkPathParent)
-	}
-
 	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
 	if err := os.RemoveAll(sdkPathParent); err != nil {
 		failf("Failed to remove path(%s), error: %s", sdkPathParent, err)

@@ -122,13 +122,14 @@ func downloadBundle(bundleURL string) (string, error) {
 
 func unarchiveBundle(tarPth, targetDir string) error {
 	// using -J to support tar.xz
+	// --no-same-owner to NOT preserve owners (default is to preserve, if ran as user 'root'),
+	// we want to set to current user as owner to prevent error due to git configuration (https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory)
 	tarCmd, err := command.NewWithParams("tar", "--no-same-owner", "-xJf", tarPth, "-C", targetDir)
 	if err != nil {
 		return fmt.Errorf("failed to create command, error: %s", err)
 	}
 
 	log.Donef("$ %s", tarCmd.PrintableCommandArgs())
-	fmt.Println()
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)
 	if err != nil {

@@ -136,5 +136,15 @@ func unarchiveBundle(tarPth, targetDir string) error {
 		return fmt.Errorf("failed to run tar command, error: %s", err)
 	}
 
+	if err := filepath.WalkDir(targetDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		return os.Chown(path, os.Getuid(), os.Getegid())
+	}); err != nil {
+		return fmt.Errorf("failed to take ownership of flutter SDK directory: %w", err)
+	}
+
 	return nil
 }

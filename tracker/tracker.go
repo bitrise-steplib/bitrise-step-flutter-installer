@@ -15,7 +15,6 @@ type StepTracker struct {
 
 func NewStepTracker(logger log.Logger, envRepo env.Repository) StepTracker {
 	p := analytics.Properties{
-		"app_slug":   envRepo.Get("BITRISE_APP_SLUG"),
 		"build_slug": envRepo.Get("BITRISE_BUILD_SLUG"),
 	}
 	return StepTracker{

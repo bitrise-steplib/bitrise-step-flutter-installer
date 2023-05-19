@@ -2,7 +2,7 @@ format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  test-git-default:
+  test_git_default:
     before_run:
     - _remove_flutter
     after_run:
@@ -14,7 +14,7 @@ workflows:
         inputs:
         - is_debug: "true"
 
-  test-git-default-force-update:
+  test_git_default_force_update:
     before_run:
     - _remove_flutter
     after_run:
@@ -28,7 +28,7 @@ workflows:
         - is_update: "true"
         - is_debug: "true"
 
-  test-bundle:
+  test_bundle:
     before_run:
     - _remove_flutter
     after_run:
@@ -57,7 +57,7 @@ workflows:
             is_expand: true
         - is_debug: "true"
 
-  test-git-branch:
+  test_git_branch:
     before_run:
     - _remove_flutter
     after_run:
@@ -70,7 +70,7 @@ workflows:
         - version: dev
         - is_debug: "true"
 
-  test-git-tag:
+  test_git_tag:
     before_run:
     - _remove_flutter
     after_run:

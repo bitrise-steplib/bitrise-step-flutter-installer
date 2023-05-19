@@ -13,6 +13,9 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	logv2 "github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-steplib/bitrise-step-flutter-installer/flutterproject"
+	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
 type config struct {
@@ -71,6 +74,16 @@ func main() {
 	if bundleSpecified && gitBranchSpecified {
 		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, " +
 			"using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
+	}
+
+	proj := flutterproject.New("./", flutterproject.NewFileOpener())
+	sdkVersions, err := proj.FlutterAndDartSDKVersions()
+	if err != nil {
+		log.Warnf("Failed to read project SDK versions: %s", err)
+	} else {
+		stepTracker := tracker.NewStepTracker(logv2.NewLogger())
+		stepTracker.LogSDKVersions(sdkVersions)
+		defer stepTracker.Wait()
 	}
 
 	preInstalled := true

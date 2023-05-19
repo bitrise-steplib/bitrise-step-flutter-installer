@@ -1,191 +1,26 @@
-format_version: 7
+format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  test:
-    before_run:
-    - audit-this-step
+  check:
     steps:
-    - go-list:
-    - golint:
-    - errcheck:
-    - go-test:
-    - change-workdir:
-        title: Switch working dir to test / _tmp dir
-        description: |-
-          To prevent step testing issues, like referencing relative
-          files with just './some-file' in the step's code, which would
-          work for testing the step from this directory directly
-          but would break if the step is included in another `bitrise.yml`.
-        run_if: true
-        inputs:
-        - path: ./_tmp
-        - is_create_path: true
-    after_run:
-    - test-git-default
-    - test-git-default-force-update
-    - test-bundle
-    - test-git-branch
-    - test-git-tag
+    - git::https://github.com/bitrise-steplib/steps-check.git: { }
 
-  test-git-default:
-    before_run:
-    - _remove_flutter
-    after_run:
-    - _test_flutter_installation
+  e2e:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        inputs:
+        - workflow: e2e
+
+  sample:
     steps:
     - path::./:
-        run_if: true
-        title: git install default
+        run_if: "true"
         inputs:
-        - is_debug: "true"
+        # Inputs with non-default value or using environment variables
+        - version: 3.7.12
+        - is_debug: true
 
-  test-git-default-force-update:
-    before_run:
-    - _remove_flutter
-    after_run:
-    - _test_flutter_installation
+  generate_readme:
     steps:
-    - path::./:
-        run_if: true
-        title: git install stable force update
-        inputs:
-          - version: "stable"
-          - is_update: "true"
-          - is_debug: "true"
-
-  test-bundle:
-    before_run:
-    - _remove_flutter
-    after_run:
-    - _test_flutter_installation
-    steps:
-    - script:
-        title: set platform specific bundle URL
-        inputs:
-         - content: |-
-            #!/bin/bash
-            set -ex
-            URL="placeholder"
-            if [ $(uname -s) == "Darwin" ]; then
-              URL="https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
-            fi
-            if [ $(uname -s) == "Linux" ]; then
-              URL="https://storage.googleapis.com/flutter_infra/releases/beta/linux/flutter_linux_v1.6.3-beta.tar.xz"
-            fi
-            envman add --key "BUNDLE_URL" --value "${URL}"
-    - path::./:
-        run_if: true
-        title: platform specific bundle install
-        inputs:
-        - installation_bundle_url: $BUNDLE_URL
-          opts:
-            is_expand: true
-        - is_debug: "true"
-
-  test-git-branch:
-    before_run:
-    - _remove_flutter
-    after_run:
-    - _test_flutter_installation
-    steps:
-    - path::./:
-        run_if: true
-        title: git install dev
-        inputs:
-        - version: "dev"
-        - is_debug: "true"
-
-  test-git-tag:
-    before_run:
-    - _remove_flutter
-    after_run:
-    - _test_flutter_installation
-    steps:
-    - path::./:
-        run_if: true
-        title: git install specific version
-        inputs:
-        - version: "v1.7.1"
-        - is_debug: "true"
-
-  _remove_flutter:
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -x
-
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "1" ]; then
-              echo "flutter not installed"
-              exit 0
-            fi
-
-            set -e
-
-            flutter_bin_dir="$(dirname "$flutter_bin_path")"
-            flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
-
-            echo "cleanup flutter sdk: $flutter_sdk_dir"
-
-            set +e
-
-            rm -rf "$flutter_sdk_dir"
-
-            if [ $? == "1" ]; then
-              echo "flutter sdk cleanup failed, trying with sudo"
-              
-              sudo rm -rf "$flutter_sdk_dir"
-
-              if [ $? == "1" ]; then
-                echo "flutter sdk cleanup failed"
-                exit 1
-              fi
-            fi
-
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "0" ]; then
-              echo "flutter sdk cleanup failed"
-              exit 1
-            fi
-
-  _test_flutter_installation:
-    steps:
-    - script:
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -ex
-
-            flutter --version
-
-  # ----------------------------------------------------------------
-  # --- Utility workflows
-  dep-update:
-    title: Dep update
-    description: |
-      Used for updating bitrise dependencies with dep
-    steps:
-    - script:
-        title: Dependency update
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            go get -u -v github.com/golang/dep/cmd/dep
-            dep ensure -v
-            dep ensure -v -update
-
-  # ----------------------------------------------------------------
-  # --- workflows to Share this step into a Step Library
-  audit-this-step:
-    steps:
-    - script:
-        title: audit-this-step
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            stepman audit --step-yml ./step.yml
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main: { }

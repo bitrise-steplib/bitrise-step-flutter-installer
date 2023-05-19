@@ -24,7 +24,7 @@ workflows:
         run_if: true
         title: git install stable force update
         inputs:
-        - version: "stable"
+        - version: stable
         - is_update: "true"
         - is_debug: "true"
 
@@ -67,7 +67,7 @@ workflows:
         run_if: true
         title: git install dev
         inputs:
-        - version: "dev"
+        - version: dev
         - is_debug: "true"
 
   test-git-tag:
@@ -80,7 +80,7 @@ workflows:
         run_if: true
         title: git install specific version
         inputs:
-        - version: "v1.7.1"
+        - version: v1.7.1
         - is_debug: "true"
 
   _remove_flutter:

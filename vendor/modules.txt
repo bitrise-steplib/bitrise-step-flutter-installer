@@ -14,15 +14,13 @@ github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.17
+## explicit
+github.com/bitrise-io/go-utils/v2/errorutil
+github.com/bitrise-io/go-utils/v2/exitcode
+github.com/bitrise-io/go-utils/v2/log
+github.com/bitrise-io/go-utils/v2/log/colorstring
 # github.com/hashicorp/go-cleanhttp v0.5.2
-## explicit
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.7.0
-## explicit
+# github.com/hashicorp/go-retryablehttp v0.7.1
 github.com/hashicorp/go-retryablehttp
-# github.com/kisielk/errcheck v1.2.0
-## explicit
-# golang.org/x/lint v0.0.0-20200130185559-910be7a94367
-## explicit
-# golang.org/x/tools v0.0.0-20200220224806-8a925fa4c0df
-## explicit

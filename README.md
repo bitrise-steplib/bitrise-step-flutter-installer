@@ -1,98 +1,64 @@
-# Flutter Installer
+# Flutter Install
 
-This step will install the selected version of Flutter SDK.
+[![Step changelog](https://shields.io/github/v/release/bitrise-steplib/bitrise-step-flutter-installer?include_prereleases&label=changelog&color=blueviolet)](https://github.com/bitrise-steplib/bitrise-step-flutter-installer/releases)
 
+Install Flutter SDK.
 
-## How to use this Step
+<details>
+<summary>Description</summary>
 
-Can be run directly with the [bitrise CLI](https://github.com/bitrise-io/bitrise),
-just `git clone` this repository, `cd` into it's folder in your Terminal/Command Line
-and call `bitrise run test`.
+This Step git clones the selected branch or tag of the official Flutter repository and runs the initial setup of the Flutter SDK.
+Use this step *before* the cache-pull step to make sure caching works correctly.
 
-*Check the `bitrise.yml` file for required inputs which have to be
-added to your `.bitrise.secrets.yml` file!*
+### Configuring the Step
+1. In the **Flutter SDK git repository version** input set the tag or branch of the Flutter. The default value is `stable` which clones and installs the latest stable Flutter branch.
+2. In the **Update to the latest version** input select `false` to use a preinstalled Flutter version or `true` to update Flutter SDK to the latest version released in the [build release channel](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels). By default, this input is set to `true`.
+4. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
 
-Step by step:
+### Troubleshooting
+If you prefer to install Flutter from an installation bundle instead of the git repository, use the **Flutter SDK installation bundle URL** input. Insert the URL of the preferred [bundle](https://flutter.dev/docs/development/tools/sdk/releases), for example, `https://storage.googleapis.com/flutter_infra/releases/dev/windows/flutter_windows_v1.14.5-dev.zip`. If the input is filled out correctly, it overrides the value set in the **Flutter SDK git repository version** input.
 
-1. Open up your Terminal / Command Line
-2. `git clone` the repository
-3. `cd` into the directory of the step (the one you just `git clone`d)
-5. Create a `.bitrise.secrets.yml` file in the same directory of `bitrise.yml`
-   (the `.bitrise.secrets.yml` is a git ignored file, you can store your secrets in it)
-6. Check the `bitrise.yml` file for any secret you should set in `.bitrise.secrets.yml`
-  * Best practice is to mark these options with something like `# define these in your .bitrise.secrets.yml`, in the `app:envs` section.
-7. Once you have all the required secret parameters in your `.bitrise.secrets.yml` you can just run this step with the [bitrise CLI](https://github.com/bitrise-io/bitrise): `bitrise run test`
+### Useful links
+- [About Flutter build release channels](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels)
+- [Available version tags](https://github.com/flutter/flutter/releases)
+- [Available branches](https://github.com/flutter/flutter/branches)
 
-An example `.bitrise.secrets.yml` file:
+### Related Steps
+- [Flutter Test](https://www.bitrise.io/integrations/steps/flutter-test)
+- [Flutter Build](https://www.bitrise.io/integrations/steps/flutter-build)
+</details>
 
-```
-envs:
-- A_SECRET_PARAM_ONE: the value for secret one
-- A_SECRET_PARAM_TWO: the value for secret two
-```
+## 🧩 Get started
 
-## How to create your own step
+Add this step directly to your workflow in the [Bitrise Workflow Editor](https://devcenter.bitrise.io/steps-and-workflows/steps-and-workflows-index/).
 
-1. Create a new git repository for your step (**don't fork** the *step template*, create a *new* repository)
-2. Copy the [step template](https://github.com/bitrise-steplib/step-template) files into your repository
-3. Fill the `step.sh` with your functionality
-4. Wire out your inputs to `step.yml` (`inputs` section)
-5. Fill out the other parts of the `step.yml` too
-6. Provide test values for the inputs in the `bitrise.yml`
-7. Run your step with `bitrise run test` - if it works, you're ready
+You can also run this step directly with [Bitrise CLI](https://github.com/bitrise-io/bitrise).
 
-__For Step development guidelines & best practices__ check this documentation: [https://github.com/bitrise-io/bitrise/blob/master/_docs/step-development-guideline.md](https://github.com/bitrise-io/bitrise/blob/master/_docs/step-development-guideline.md).
+## ⚙️ Configuration
 
-**NOTE:**
+<details>
+<summary>Inputs</summary>
 
-If you want to use your step in your project's `bitrise.yml`:
+| Key | Description | Flags | Default |
+| --- | --- | --- | --- |
+| `version` | Use this input to install from the git repository by specifying a tag or branch.  Use this input for the stable channel, as the stable channel can be preinstalled.  If the input Flutter SDK installation bundle URL is specified, this input is ignored.  To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)  To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches) |  | `stable` |
+| `is_update` | If the version selected is `stable` and a preinstalled Flutter version from the `stable` channel with version 1.2.1 exists: * Setting to `false` will not update, even if a later release exists. * Setting to `true` will update Flutter to the latest version released in the channel. |  | `true` |
+| `installation_bundle_url` | Installation bundle URL. If specified, Flutter will be installed from here and git repository version is ignored.  For a channel other than stable (e.g. beta), it is recommended to use this input. It is faster than cloning from git.  Official list of Flutter installation bundles: [https://flutter.dev/docs/development/tools/sdk/releases](https://flutter.dev/docs/development/tools/sdk/releases)  The URL is expected to begin with: `https://storage.googleapis.com/flutter_infra`  Example value (beta channel, version 1.6.3, macOS): `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip` |  |  |
+| `is_debug` | If enabled will run flutter doctor and print value of PATH eniroment variable. |  | `false` |
+</details>
 
-1. git push the step into it's repository
-2. reference it in your `bitrise.yml` with the `git::PUBLIC-GIT-CLONE-URL@BRANCH` step reference style:
+<details>
+<summary>Outputs</summary>
+There are no outputs defined in this step
+</details>
 
-```
-- git::https://github.com/user/my-step.git@branch:
-   title: My step
-   inputs:
-   - my_input_1: "my value 1"
-   - my_input_2: "my value 2"
-```
+## 🙋 Contributing
 
-You can find more examples of step reference styles
-in the [bitrise CLI repository](https://github.com/bitrise-io/bitrise/blob/master/_examples/tutorials/steps-and-workflows/bitrise.yml#L65).
+We welcome [pull requests](https://github.com/bitrise-steplib/bitrise-step-flutter-installer/pulls) and [issues](https://github.com/bitrise-steplib/bitrise-step-flutter-installer/issues) against this repository.
 
-## How to contribute to this Step
+For pull requests, work on your changes in a forked repository and use the Bitrise CLI to [run step tests locally](https://devcenter.bitrise.io/bitrise-cli/run-your-first-build/).
 
-1. Fork this repository
-2. `git clone` it
-3. Create a branch you'll work on
-4. To use/test the step just follow the **How to use this Step** section
-5. Do the changes you want to
-6. Run/test the step before sending your contribution
-  * You can also test the step in your `bitrise` project, either on your Mac or on [bitrise.io](https://www.bitrise.io)
-  * You just have to replace the step ID in your project's `bitrise.yml` with either a relative path, or with a git URL format
-  * (relative) path format: instead of `- original-step-id:` use `- path::./relative/path/of/script/on/your/Mac:`
-  * direct git URL format: instead of `- original-step-id:` use `- git::https://github.com/user/step.git@branch:`
-  * You can find more example of alternative step referencing at: https://github.com/bitrise-io/bitrise/blob/master/_examples/tutorials/steps-and-workflows/bitrise.yml
-7. Once you're done just commit your changes & create a Pull Request
+Learn more about developing steps:
 
-
-## Share your own Step
-
-You can share your Step or step version with the [bitrise CLI](https://github.com/bitrise-io/bitrise). If you use the `bitrise.yml` included in this repository, all you have to do is:
-
-1. In your Terminal / Command Line `cd` into this directory (where the `bitrise.yml` of the step is located)
-1. Run: `bitrise run test` to test the step
-1. Run: `bitrise run audit-this-step` to audit the `step.yml`
-1. Check the `share-this-step` workflow in the `bitrise.yml`, and fill out the
-   `envs` if you haven't done so already (don't forget to bump the version number if this is an update
-   of your step!)
-1. Then run: `bitrise run share-this-step` to share the step (version) you specified in the `envs`
-1. Send the Pull Request, as described in the logs of `bitrise run share-this-step`
-
-That's all ;)
-
-## Trigger a new release
-
-- __merge every code changes__ to the `master` branch
-- __push the new version tag__ to the `master` branch
+- [Create your own step](https://devcenter.bitrise.io/contributors/create-your-own-step/)
+- [Testing your Step](https://devcenter.bitrise.io/contributors/testing-and-versioning-your-steps/)

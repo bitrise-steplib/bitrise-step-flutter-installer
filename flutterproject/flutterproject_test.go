@@ -24,34 +24,20 @@ func TestProject_FlutterAndDartSDKVersions(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, string(b), `{
-	"FlutterSDKVersions": [
-		{
-			"Version": "3.7.12",
-			"Constraint": null,
-			"Source": "fvm_config_json"
-		},
-		{
-			"Version": "3.7.12",
-			"Constraint": null,
-			"Source": "tool_versions"
-		},
-		{
-			"Version": null,
-			"Constraint": "^3.7.12",
-			"Source": "pubspec_yaml"
-		}
-	],
-	"DartSDKVersions": [
-		{
-			"Version": null,
-			"Constraint": "\u003e=2.19.6 \u003c3.0.0",
-			"Source": "pubspec_lock"
-		},
-		{
-			"Version": null,
-			"Constraint": "\u003e=2.19.6 \u003c3.0.0",
-			"Source": "pubspec_yaml"
-		}
-	]
+	"FVMFlutterVersion": "3.7.12",
+	"ASDFFlutterVersion": "3.7.12",
+	"PubspecFlutterVersion": {
+		"Version": null,
+		"Constraint": "^3.7.12"
+	},
+	"PubspecDartVersion": {
+		"Version": null,
+		"Constraint": "\u003e=2.19.6 \u003c3.0.0"
+	},
+	"PubspecLockFlutterVersion": null,
+	"PubspecLockDartVersion": {
+		"Version": null,
+		"Constraint": "\u003e=2.19.6 \u003c3.0.0"
+	}
 }`)
 }

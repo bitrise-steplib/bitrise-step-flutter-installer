@@ -37,7 +37,7 @@ func (r PubspecLockVersionReader) ReadSDKVersions(projectRootDir string) (*Versi
 
 	var flutterVersion *VersionConstraint
 	if flutterVersionStr != "" {
-		flutterVersion, err = NewVersionConstraint(flutterVersionStr, PubspecLockVersionSource)
+		flutterVersion, err = NewVersionConstraint(flutterVersionStr)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -45,7 +45,7 @@ func (r PubspecLockVersionReader) ReadSDKVersions(projectRootDir string) (*Versi
 
 	var dartVersion *VersionConstraint
 	if dartVersionStr != "" {
-		dartVersion, err = NewVersionConstraint(dartVersionStr, PubspecLockVersionSource)
+		dartVersion, err = NewVersionConstraint(dartVersionStr)
 		if err != nil {
 			return nil, nil, err
 		}

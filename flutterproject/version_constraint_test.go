@@ -10,7 +10,6 @@ func TestNewVersionConstraint(t *testing.T) {
 	tests := []struct {
 		name           string
 		version        string
-		source         VersionConstraintSource
 		wantVersion    string
 		wantConstraint string
 		wantSource     string
@@ -19,21 +18,18 @@ func TestNewVersionConstraint(t *testing.T) {
 		{
 			name:        "Exact semver version",
 			version:     "1.2.3",
-			source:      "test_source",
 			wantVersion: "1.2.3",
 			wantSource:  "test_source",
 		},
 		{
 			name:           "Version constraint - Caret syntax",
 			version:        "^1.2.3",
-			source:         "test_source",
 			wantConstraint: "^1.2.3",
 			wantSource:     "test_source",
 		},
 		{
 			name:           "Version constraint - Traditional syntax",
 			version:        ">=1.2.3 <2.0.0",
-			source:         "test_source",
 			wantConstraint: ">=1.2.3 <2.0.0",
 			wantSource:     "test_source",
 		},
@@ -50,7 +46,7 @@ func TestNewVersionConstraint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewVersionConstraint(tt.version, tt.source)
+			got, err := NewVersionConstraint(tt.version)
 			if tt.wantErr != "" {
 				require.EqualError(t, err, tt.wantErr)
 				require.Nil(t, got)
@@ -70,7 +66,6 @@ func TestNewVersionConstraint(t *testing.T) {
 				} else {
 					require.Nil(t, got.Constraint)
 				}
-				require.Equal(t, tt.wantSource, string(got.Source))
 			}
 		})
 	}

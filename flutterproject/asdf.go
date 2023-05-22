@@ -5,6 +5,8 @@ import (
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 const asdfConfigRelPath = ".tool-versions"
@@ -19,31 +21,26 @@ func NewASDFVersionReader(fileOpener FileOpener) ASDFVersionReader {
 	}
 }
 
-func (r ASDFVersionReader) ReadSDKVersions(projectRootDir string) (*VersionConstraint, *VersionConstraint, error) {
+func (r ASDFVersionReader) ReadSDKVersions(projectRootDir string) (*semver.Version, error) {
 	asdfConfigPth := filepath.Join(projectRootDir, asdfConfigRelPath)
 	f, err := r.fileOpener.OpenFile(asdfConfigPth)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if f == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	versionStr, err := parseASDFFlutterVersion(f)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if versionStr == "" {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	flutterSDKVersion, err := NewVersionConstraint(versionStr, ASDFConfigVersionSource)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return flutterSDKVersion, nil, nil
+	return semver.NewVersion(versionStr)
 }
 
 func parseASDFFlutterVersion(asdfConfigReader io.Reader) (string, error) {

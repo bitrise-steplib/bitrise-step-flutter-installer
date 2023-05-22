@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"io"
 	"path/filepath"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 const fvmConfigRelPath = ".fvm/fvm_config.json"
@@ -18,31 +20,26 @@ func NewFVMVersionReader(fileOpener FileOpener) FVMVersionReader {
 	}
 }
 
-func (r FVMVersionReader) ReadSDKVersions(projectRootDir string) (*VersionConstraint, *VersionConstraint, error) {
+func (r FVMVersionReader) ReadSDKVersion(projectRootDir string) (*semver.Version, error) {
 	fvmConfigPth := filepath.Join(projectRootDir, fvmConfigRelPath)
 	f, err := r.fileOpener.OpenFile(fvmConfigPth)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if f == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	versionStr, err := parseFVMFlutterVersion(f)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if versionStr == "" {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	flutterSDKVersion, err := NewVersionConstraint(versionStr, FVMConfigVersionSource)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return flutterSDKVersion, nil, nil
+	return semver.NewVersion(versionStr)
 }
 
 func parseFVMFlutterVersion(fvmConfigReader io.Reader) (string, error) {

@@ -1,8 +1,6 @@
 package flutterproject
 
-type SDKVersionsReader interface {
-	ReadSDKVersions(projectRootDir string) (*VersionConstraint, *VersionConstraint, error)
-}
+import "github.com/Masterminds/semver/v3"
 
 type Project struct {
 	rootDir    string
@@ -17,34 +15,46 @@ func New(rootDir string, fileOpener FileOpener) Project {
 }
 
 type FlutterAndDartSDKVersions struct {
-	FlutterSDKVersions []VersionConstraint
-	DartSDKVersions    []VersionConstraint
+	FVMFlutterVersion         *semver.Version
+	ASDFFlutterVersion        *semver.Version
+	PubspecFlutterVersion     *VersionConstraint
+	PubspecDartVersion        *VersionConstraint
+	PubspecLockFlutterVersion *VersionConstraint
+	PubspecLockDartVersion    *VersionConstraint
 }
 
 func (p Project) FlutterAndDartSDKVersions() (FlutterAndDartSDKVersions, error) {
-	versionReaders := []SDKVersionsReader{
-		NewFVMVersionReader(p.fileOpener),
-		NewASDFVersionReader(p.fileOpener),
-		NewPubspecLockVersionReader(p.fileOpener),
-		NewPubspecVersionReader(p.fileOpener),
+	sdkVersions := FlutterAndDartSDKVersions{}
+
+	fvmFlutterVersion, err := NewFVMVersionReader(p.fileOpener).ReadSDKVersion(p.rootDir)
+	if err != nil {
+		return FlutterAndDartSDKVersions{}, err
+	} else {
+		sdkVersions.FVMFlutterVersion = fvmFlutterVersion
 	}
 
-	var flutterSDKVersions []VersionConstraint
-	var dartSDKVersions []VersionConstraint
-	for _, versionReader := range versionReaders {
-		flutterSDKVersion, dartSDKVersion, err := versionReader.ReadSDKVersions(p.rootDir)
-		if err != nil {
-			return FlutterAndDartSDKVersions{}, err
-		}
-		if flutterSDKVersion != nil {
-			flutterSDKVersions = append(flutterSDKVersions, *flutterSDKVersion)
-		}
-		if dartSDKVersion != nil {
-			dartSDKVersions = append(dartSDKVersions, *dartSDKVersion)
-		}
+	asdfFlutterVersion, err := NewASDFVersionReader(p.fileOpener).ReadSDKVersions(p.rootDir)
+	if err != nil {
+		return FlutterAndDartSDKVersions{}, err
+	} else {
+		sdkVersions.ASDFFlutterVersion = asdfFlutterVersion
 	}
-	return FlutterAndDartSDKVersions{
-		FlutterSDKVersions: flutterSDKVersions,
-		DartSDKVersions:    dartSDKVersions,
-	}, nil
+
+	pubspecLockFlutterVersion, pubspecLockDartVersion, err := NewPubspecLockVersionReader(p.fileOpener).ReadSDKVersions(p.rootDir)
+	if err != nil {
+		return FlutterAndDartSDKVersions{}, err
+	} else {
+		sdkVersions.PubspecLockFlutterVersion = pubspecLockFlutterVersion
+		sdkVersions.PubspecLockDartVersion = pubspecLockDartVersion
+	}
+
+	pubspecFlutterVersion, pubspecDartVersion, err := NewPubspecVersionReader(p.fileOpener).ReadSDKVersions(p.rootDir)
+	if err != nil {
+		return FlutterAndDartSDKVersions{}, err
+	} else {
+		sdkVersions.PubspecFlutterVersion = pubspecFlutterVersion
+		sdkVersions.PubspecDartVersion = pubspecDartVersion
+	}
+
+	return sdkVersions, nil
 }

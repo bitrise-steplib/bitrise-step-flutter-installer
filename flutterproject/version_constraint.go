@@ -6,15 +6,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-type VersionConstraintSource string
-
-const (
-	PubspecLockVersionSource VersionConstraintSource = "pubspec_lock"
-	PubspecVersionSource     VersionConstraintSource = "pubspec_yaml"
-	FVMConfigVersionSource   VersionConstraintSource = "fvm_config_json"
-	ASDFConfigVersionSource  VersionConstraintSource = "tool_versions"
-)
-
 /*
 VersionConstraint stores either an exact version or a version constraint.
 Version is a valid semantic version, constraint supports the Caret and the traditional syntax.
@@ -34,10 +25,9 @@ Traditional syntax
 type VersionConstraint struct {
 	Version    *semver.Version
 	Constraint *semver.Constraints
-	Source     VersionConstraintSource
 }
 
-func NewVersionConstraint(version string, source VersionConstraintSource) (*VersionConstraint, error) {
+func NewVersionConstraint(version string) (*VersionConstraint, error) {
 	var v *semver.Version
 	var c *semver.Constraints
 
@@ -54,6 +44,5 @@ func NewVersionConstraint(version string, source VersionConstraintSource) (*Vers
 	return &VersionConstraint{
 		Version:    v,
 		Constraint: c,
-		Source:     source,
 	}, nil
 }

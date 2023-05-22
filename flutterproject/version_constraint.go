@@ -46,3 +46,12 @@ func NewVersionConstraint(version string) (*VersionConstraint, error) {
 		Constraint: c,
 	}, nil
 }
+
+func (c VersionConstraint) String() string {
+	if c.Version != nil {
+		return c.Version.String()
+	} else if c.Constraint != nil {
+		return c.Constraint.String()
+	}
+	return ""
+}

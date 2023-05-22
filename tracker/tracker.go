@@ -42,32 +42,16 @@ func projectSDKVersionsToProperties(projectSDKVersions flutterproject.FlutterAnd
 		p["flutter_sdk_tool_versions"] = projectSDKVersions.ASDFFlutterVersion.String()
 	}
 	if projectSDKVersions.PubspecLockFlutterVersion != nil {
-		if projectSDKVersions.PubspecLockFlutterVersion.Version != nil {
-			p["flutter_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockFlutterVersion.Version.String()
-		} else if projectSDKVersions.PubspecLockFlutterVersion.Constraint != nil {
-			p["flutter_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockFlutterVersion.Constraint.String()
-		}
+		p["flutter_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockFlutterVersion.String()
 	}
 	if projectSDKVersions.PubspecFlutterVersion != nil {
-		if projectSDKVersions.PubspecFlutterVersion.Version != nil {
-			p["flutter_sdk_pubspec_yaml"] = projectSDKVersions.PubspecFlutterVersion.Version.String()
-		} else if projectSDKVersions.PubspecFlutterVersion.Constraint != nil {
-			p["flutter_sdk_pubspec_yaml"] = projectSDKVersions.PubspecFlutterVersion.Constraint.String()
-		}
+		p["flutter_sdk_pubspec_yaml"] = projectSDKVersions.PubspecFlutterVersion.String()
 	}
 	if projectSDKVersions.PubspecLockDartVersion != nil {
-		if projectSDKVersions.PubspecLockDartVersion.Version != nil {
-			p["dart_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockDartVersion.Version.String()
-		} else if projectSDKVersions.PubspecLockDartVersion.Constraint != nil {
-			p["dart_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockDartVersion.Constraint.String()
-		}
+		p["dart_sdk_pubspec_lock"] = projectSDKVersions.PubspecLockDartVersion.String()
 	}
 	if projectSDKVersions.PubspecDartVersion != nil {
-		if projectSDKVersions.PubspecDartVersion.Version != nil {
-			p["dart_sdk_pubspec_yaml"] = projectSDKVersions.PubspecDartVersion.Version.String()
-		} else if projectSDKVersions.PubspecDartVersion.Constraint != nil {
-			p["dart_sdk_pubspec_yaml"] = projectSDKVersions.PubspecDartVersion.Constraint.String()
-		}
+		p["dart_sdk_pubspec_yaml"] = projectSDKVersions.PubspecDartVersion.String()
 	}
 
 	return p

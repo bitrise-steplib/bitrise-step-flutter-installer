@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,75 +14,94 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/errorutil"
+	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-steplib/bitrise-step-flutter-installer/flutterproject"
 	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
-type config struct {
-	Version  string `env:"version"`
-	IsUpdate bool   `env:"is_update,required"`
-
-	BundleURL string `env:"installation_bundle_url"`
-
-	IsDebug bool `env:"is_debug,required"`
-}
-
-func failf(msg string, args ...interface{}) {
-	log.Errorf(msg, args...)
-	os.Exit(1)
-}
-
-func runFlutterDoctor() error {
-	fmt.Println()
-	log.Infof("Check flutter doctor")
-	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
-	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
-	fmt.Println()
-	if err := doctorCmd.Run(); err != nil {
-		return fmt.Errorf("failed to check flutter doctor, error: %s", err)
-	}
-	return nil
-}
-
-func printDirOwner(flutterSDKPath string) {
-	dirOwnerCmd := command.NewWithStandardOuts("ls", "-al", flutterSDKPath)
-	log.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
-	fmt.Println()
-	if err := dirOwnerCmd.Run(); err != nil {
-		log.Warnf("Failed to run ls: %s", err)
-	}
-}
-
 func main() {
-	var cfg config
-	if err := stepconf.Parse(&cfg); err != nil {
-		failf("Issue with input: %s", err)
-	}
-	stepconf.Print(cfg)
+	exitCode := run()
+	os.Exit(int(exitCode))
+}
 
-	bundleSpecified := strings.TrimSpace(cfg.BundleURL) != ""
-	gitBranchSpecified := strings.TrimSpace(cfg.Version) != ""
+func run() ExitCode {
+	logger := logv2.NewLogger()
+
+	flutterInstaller := NewFlutterInstaller()
+
+	config, err := flutterInstaller.ProcessConfig()
+	if err != nil {
+		logger.Println()
+		logger.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to process Step inputs: %w", err)))
+		return Failure
+	}
+
+	if err := flutterInstaller.Run(config); err != nil {
+		logger.Println()
+		logger.Errorf(errorutil.FormattedError(fmt.Errorf("Failed to execute Step: %w", err)))
+		return Failure
+	}
+
+	return Success
+}
+
+type Input struct {
+	Version   string `env:"version"`
+	IsUpdate  bool   `env:"is_update,required"`
+	BundleURL string `env:"installation_bundle_url"`
+	IsDebug   bool   `env:"is_debug,required"`
+}
+
+type Config struct {
+	Input
+	BundleSpecified bool
+}
+
+type FlutterInstaller struct {
+}
+
+func NewFlutterInstaller() FlutterInstaller {
+	return FlutterInstaller{}
+}
+
+func (b FlutterInstaller) ProcessConfig() (Config, error) {
+	var input Input
+	if err := stepconf.Parse(&input); err != nil {
+		return Config{}, err
+	}
+	stepconf.Print(input)
+	fmt.Println()
+
+	log.SetEnableDebugLog(input.IsDebug)
+
+	bundleSpecified := strings.TrimSpace(input.BundleURL) != ""
+	gitBranchSpecified := strings.TrimSpace(input.Version) != ""
 	if !bundleSpecified && !gitBranchSpecified {
-		failf(`One of the following inputs needs to be specified:
+		return Config{}, errors.New(`One of the following inputs needs to be specified:
 "Flutter SDK git repository version" (version)
 "Flutter SDK installation bundle URL" (installation_bundle_url)`)
 	}
-	fmt.Println()
-
-	log.SetEnableDebugLog(cfg.IsDebug)
 
 	if bundleSpecified && gitBranchSpecified {
 		log.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, " +
 			"using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
 	}
 
+	config := Config{Input: input, BundleSpecified: bundleSpecified}
+
+	return config, nil
+}
+
+func (b FlutterInstaller) Run(cfg Config) error {
 	proj := flutterproject.New("./", flutterproject.NewFileOpener())
 	sdkVersions, err := proj.FlutterAndDartSDKVersions()
 	if err != nil {
 		log.Warnf("Failed to read project SDK versions: %s", err)
 	} else {
-		stepTracker := tracker.NewStepTracker(logv2.NewLogger())
+		stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
 		stepTracker.LogSDKVersions(sdkVersions)
 		defer stepTracker.Wait()
 	}
@@ -110,7 +130,7 @@ func main() {
 	}
 
 	requiredVersion := strings.TrimSpace(cfg.Version)
-	if !cfg.IsUpdate && preInstalled && !bundleSpecified &&
+	if !cfg.IsUpdate && preInstalled && !cfg.BundleSpecified &&
 		requiredVersion == versionInfo.channel &&
 		sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
 		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.",
@@ -120,11 +140,11 @@ to use the latest version from channel %s.`, requiredVersion)
 
 		if cfg.IsDebug {
 			if err := runFlutterDoctor(); err != nil {
-				failf("%s", err)
+				return err
 			}
 		}
 
-		return
+		return nil
 	}
 
 	fmt.Println()
@@ -136,19 +156,19 @@ to use the latest version from channel %s.`, requiredVersion)
 
 	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
 	if err := os.RemoveAll(sdkPathParent); err != nil {
-		failf("Failed to remove path(%s), error: %s", sdkPathParent, err)
+		return fmt.Errorf("failed to remove path(%s), error: %s", sdkPathParent, err)
 	}
 
 	if err := os.MkdirAll(sdkPathParent, 0770); err != nil {
-		failf("failed to create folder (%s), error: %s", sdkPathParent, err)
+		return fmt.Errorf("failed to create folder (%s), error: %s", sdkPathParent, err)
 	}
 
-	if bundleSpecified {
+	if cfg.BundleSpecified {
 		fmt.Println()
 		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
 		if err := downloadAndUnarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
-			failf("failed to download and unarchive bundle, error: %s", err)
+			return fmt.Errorf("failed to download and unarchive bundle, error: %s", err)
 		}
 	} else {
 		log.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
@@ -157,11 +177,11 @@ to use the latest version from channel %s.`, requiredVersion)
 		// repository name ('flutter') is in the path, will be checked out there
 		gitRepo, err := git.New(flutterSDKPath)
 		if err != nil {
-			failf("Failed to open git repo, error: %s", err)
+			return fmt.Errorf("failed to open git repo, error: %s", err)
 		}
 
 		if err := gitRepo.CloneTagOrBranch("https://github.com/flutter/flutter.git", cfg.Version).Run(); err != nil {
-			failf("Failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
+			return fmt.Errorf("failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
 		}
 	}
 
@@ -175,11 +195,11 @@ to use the latest version from channel %s.`, requiredVersion)
 	path += ":" + os.Getenv("PATH")
 
 	if err := os.Setenv("PATH", path); err != nil {
-		failf("Failed to set env, error: %s", err)
+		return fmt.Errorf("failed to set env, error: %s", err)
 	}
 
 	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
-		failf("Failed to export env with envman, error: %s", err)
+		return fmt.Errorf("failed to export env with envman, error: %s", err)
 	}
 
 	log.Donef("Added to $PATH")
@@ -188,7 +208,7 @@ to use the latest version from channel %s.`, requiredVersion)
 	if cfg.IsDebug {
 		flutterBinPath, err := exec.LookPath("flutter")
 		if err != nil {
-			failf("Failed to get Flutter binary path")
+			return fmt.Errorf("failed to get Flutter binary path")
 		}
 		log.Infof("Flutter binary path: %s", flutterBinPath)
 
@@ -208,12 +228,35 @@ to use the latest version from channel %s.`, requiredVersion)
 	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	fmt.Println()
 	if err := versionCmd.Run(); err != nil {
-		failf("Failed to check flutter version, error: %s", err)
+		return fmt.Errorf("failed to check flutter version, error: %s", err)
 	}
 
 	if cfg.IsDebug {
 		if err := runFlutterDoctor(); err != nil {
-			failf("%s", err)
+			return err
 		}
+	}
+
+	return nil
+}
+
+func runFlutterDoctor() error {
+	fmt.Println()
+	log.Infof("Check flutter doctor")
+	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
+	log.Donef("$ %s", doctorCmd.PrintableCommandArgs())
+	fmt.Println()
+	if err := doctorCmd.Run(); err != nil {
+		return fmt.Errorf("failed to check flutter doctor, error: %s", err)
+	}
+	return nil
+}
+
+func printDirOwner(flutterSDKPath string) {
+	dirOwnerCmd := command.NewWithStandardOuts("ls", "-al", flutterSDKPath)
+	log.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
+	fmt.Println()
+	if err := dirOwnerCmd.Run(); err != nil {
+		log.Warnf("Failed to run ls: %s", err)
 	}
 }

@@ -25,7 +25,7 @@ func NewStepTracker(logger log.Logger, envRepo env.Repository) StepTracker {
 
 func (t *StepTracker) LogSDKVersions(projectSDKVersions flutterproject.FlutterAndDartSDKVersions) {
 	p := projectSDKVersionsToProperties(projectSDKVersions)
-	t.tracker.Enqueue("flutter_scanner_project_sdk_versions", p)
+	t.tracker.Enqueue("step_flutter_installer_project_sdk_versions", p)
 }
 
 func (t *StepTracker) Wait() {

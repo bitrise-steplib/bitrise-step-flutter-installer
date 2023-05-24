@@ -1,3 +1,6 @@
+# github.com/Masterminds/semver/v3 v3.2.1
+## explicit
+github.com/Masterminds/semver/v3
 # github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77
 ## explicit
 github.com/bitrise-io/go-steputils/stepconf
@@ -16,11 +19,32 @@ github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
 # github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.17
 ## explicit
+github.com/bitrise-io/go-utils/v2/analytics
+github.com/bitrise-io/go-utils/v2/env
 github.com/bitrise-io/go-utils/v2/errorutil
 github.com/bitrise-io/go-utils/v2/exitcode
 github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
+github.com/bitrise-io/go-utils/v2/retryhttp
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
+# github.com/gofrs/uuid v4.3.1+incompatible
+github.com/gofrs/uuid
 # github.com/hashicorp/go-cleanhttp v0.5.2
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-retryablehttp v0.7.1
 github.com/hashicorp/go-retryablehttp
+# github.com/mitchellh/mapstructure v1.5.0
+github.com/mitchellh/mapstructure
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/stretchr/objx v0.5.0
+github.com/stretchr/objx
+# github.com/stretchr/testify v1.8.3
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
+github.com/stretchr/testify/require
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3

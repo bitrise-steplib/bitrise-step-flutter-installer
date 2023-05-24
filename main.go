@@ -14,9 +14,12 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-steplib/bitrise-step-flutter-installer/flutterproject"
+	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
 func main() {
@@ -93,6 +96,16 @@ func (b FlutterInstaller) ProcessConfig() (Config, error) {
 }
 
 func (b FlutterInstaller) Run(cfg Config) error {
+	proj := flutterproject.New("./", flutterproject.NewFileOpener())
+	sdkVersions, err := proj.FlutterAndDartSDKVersions()
+	if err != nil {
+		log.Warnf("Failed to read project SDK versions: %s", err)
+	} else {
+		stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
+		stepTracker.LogSDKVersions(sdkVersions)
+		defer stepTracker.Wait()
+	}
+
 	preInstalled := true
 	flutterBinPath, err := exec.LookPath("flutter")
 	if err != nil {

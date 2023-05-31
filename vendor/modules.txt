@@ -1,6 +1,6 @@
 # github.com/Masterminds/semver/v3 v3.2.1
 github.com/Masterminds/semver/v3
-# github.com/bitrise-io/go-flutter v0.0.0-20230530073929-7d57a06fe569
+# github.com/bitrise-io/go-flutter v0.1.0
 ## explicit
 github.com/bitrise-io/go-flutter/flutterproject
 github.com/bitrise-io/go-flutter/flutterproject/internal/sdk
@@ -21,7 +21,7 @@ github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.17.0.20230523121129-33e644c3c5f3
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.18
 ## explicit
 github.com/bitrise-io/go-utils/v2/analytics
 github.com/bitrise-io/go-utils/v2/env

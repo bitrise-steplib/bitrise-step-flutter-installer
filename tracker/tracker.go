@@ -5,7 +5,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 
-	"github.com/bitrise-steplib/bitrise-step-flutter-installer/flutterproject"
+	"github.com/bitrise-io/go-flutter/flutterproject"
 )
 
 type StepTracker struct {

@@ -1,6 +1,6 @@
 # github.com/Masterminds/semver/v3 v3.2.1
 github.com/Masterminds/semver/v3
-# github.com/bitrise-io/go-flutter v0.1.0
+# github.com/bitrise-io/go-flutter v0.1.1-0.20231026135119-63611c31d76e
 ## explicit
 github.com/bitrise-io/go-flutter/flutterproject
 github.com/bitrise-io/go-flutter/flutterproject/internal/sdk

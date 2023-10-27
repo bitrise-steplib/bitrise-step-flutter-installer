@@ -1,11 +1,10 @@
 package tracker
 
 import (
+	"github.com/bitrise-io/go-flutter/flutterproject"
 	"github.com/bitrise-io/go-utils/v2/analytics"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-
-	"github.com/bitrise-io/go-flutter/flutterproject"
 )
 
 type StepTracker struct {

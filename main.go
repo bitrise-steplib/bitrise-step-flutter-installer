@@ -8,10 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/v2/fileutil"
-	"github.com/bitrise-io/go-utils/v2/pathutil"
-
 	"github.com/bitrise-io/go-flutter/flutterproject"
+	"github.com/bitrise-io/go-flutter/fluttersdk"
 	"github.com/bitrise-io/go-steputils/stepconf"
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
@@ -21,7 +19,9 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
@@ -99,7 +99,7 @@ func (b FlutterInstaller) ProcessConfig() (Config, error) {
 }
 
 func (b FlutterInstaller) Run(cfg Config) error {
-	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker())
+	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
 	if err != nil {
 		log.Warnf("Failed to open project: %s", err)
 	} else {

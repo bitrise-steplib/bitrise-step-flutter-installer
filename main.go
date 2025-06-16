@@ -4,18 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-flutter/flutterproject"
 	"github.com/bitrise-io/go-flutter/fluttersdk"
 	"github.com/bitrise-io/go-steputils/stepconf"
-	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
 	. "github.com/bitrise-io/go-utils/v2/exitcode"
@@ -53,7 +48,6 @@ func run() ExitCode {
 
 type Input struct {
 	Version   string `env:"version"`
-	IsUpdate  bool   `env:"is_update,required"`
 	BundleURL string `env:"installation_bundle_url"`
 	IsDebug   bool   `env:"is_debug,required"`
 }
@@ -99,143 +93,22 @@ func (b FlutterInstaller) ProcessConfig() (Config, error) {
 }
 
 func (b FlutterInstaller) Run(cfg Config) error {
+	// getting SDK versions from project files like fvm_config.json (fvm), .tool_versions (asdf), pubspec.yaml and pubspec.lock
 	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
 	if err != nil {
 		log.Warnf("Failed to open project: %s", err)
-	} else {
-		sdkVersions, err := proj.FlutterAndDartSDKVersions()
-		if err != nil {
-			log.Warnf("Failed to read project SDK versions: %s", err)
-		} else {
-			stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
-			stepTracker.LogSDKVersions(sdkVersions)
-			defer stepTracker.Wait()
-		}
 	}
-
-	preInstalled := true
-	flutterBinPath, err := exec.LookPath("flutter")
+	sdkVersions, err := proj.FlutterAndDartSDKVersions()
 	if err != nil {
-		preInstalled = false
-		log.Printf("Flutter is not preinstalled.")
+		log.Warnf("Failed to read project SDK versions: %s", err)
 	} else {
-		log.Infof("Preinstalled Flutter binary path: %s", flutterBinPath)
+		stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
+		stepTracker.LogSDKVersions(sdkVersions)
+		defer stepTracker.Wait()
 	}
 
-	var versionInfo flutterVersion
-	if preInstalled {
-		var rawVersionOutput string
-		versionInfo, rawVersionOutput, err = flutterVersionInfo()
-		if err != nil {
-			log.Warnf("%s", err)
-		}
-		log.Printf(rawVersionOutput)
-	}
-
-	if versionInfo.version != "" {
-		log.Infof("Preinstalled Flutter version: %s", versionInfo.version)
-	}
-
-	requiredVersion := strings.TrimSpace(cfg.Version)
-	if !cfg.IsUpdate && preInstalled && !cfg.BundleSpecified &&
-		requiredVersion == versionInfo.channel &&
-		sliceutil.IsStringInSlice(requiredVersion, []string{"stable", "beta", "dev", "master"}) {
-		log.Infof("Required Flutter channel (%s) matches preinstalled Flutter channel (%s), skipping installation.",
-			requiredVersion, versionInfo.channel)
-		log.Infof(`Set input "Update to the latest version (is_update)" to "true"
-to use the latest version from channel %s.`, requiredVersion)
-
-		if cfg.IsDebug {
-			if err := runFlutterDoctor(); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
-	fmt.Println()
-	log.Infof("Downloading Flutter SDK")
-	fmt.Println()
-
-	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
-	flutterSDKPath := filepath.Join(sdkPathParent, "flutter")
-
-	log.Printf("Cleaning SDK target path: %s", sdkPathParent)
-	if err := os.RemoveAll(sdkPathParent); err != nil {
-		return fmt.Errorf("failed to remove path(%s), error: %s", sdkPathParent, err)
-	}
-
-	if err := os.MkdirAll(sdkPathParent, 0770); err != nil {
-		return fmt.Errorf("failed to create folder (%s), error: %s", sdkPathParent, err)
-	}
-
-	if cfg.BundleSpecified {
-		fmt.Println()
-		log.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
-
-		if err := downloadAndUnarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
-			return fmt.Errorf("failed to download and unarchive bundle, error: %s", err)
-		}
-	} else {
-		log.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
-		log.Infof("Selected branch/tag: %s", cfg.Version)
-
-		// repository name ('flutter') is in the path, will be checked out there
-		gitRepo, err := git.New(flutterSDKPath)
-		if err != nil {
-			return fmt.Errorf("failed to open git repo, error: %s", err)
-		}
-
-		if err := gitRepo.CloneTagOrBranch("https://github.com/flutter/flutter.git", cfg.Version).Run(); err != nil {
-			return fmt.Errorf("failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
-		}
-	}
-
-	log.Printf("Adding flutter bin directory to $PATH")
-	log.Debugf("PATH: %s", os.Getenv("PATH"))
-
-	path := filepath.Join(flutterSDKPath, "bin")
-	path += ":" + filepath.Join(flutterSDKPath, "bin", "cache", "dart-sdk", "bin")
-	path += ":" + filepath.Join(flutterSDKPath, ".pub-cache", "bin")
-	path += ":" + filepath.Join(os.Getenv("HOME"), ".pub-cache", "bin")
-	path += ":" + os.Getenv("PATH")
-
-	if err := os.Setenv("PATH", path); err != nil {
-		return fmt.Errorf("failed to set env, error: %s", err)
-	}
-
-	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
-		return fmt.Errorf("failed to export env with envman, error: %s", err)
-	}
-
-	log.Donef("Added to $PATH")
-	log.Debugf("PATH: %s", os.Getenv("PATH"))
-
-	if cfg.IsDebug {
-		flutterBinPath, err := exec.LookPath("flutter")
-		if err != nil {
-			return fmt.Errorf("failed to get Flutter binary path")
-		}
-		log.Infof("Flutter binary path: %s", flutterBinPath)
-
-		treeCmd := command.New("tree", "-L", "3", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
-		log.Donef("$ %s", treeCmd.PrintableCommandArgs())
-		fmt.Println()
-		if err := treeCmd.Run(); err != nil {
-			log.Warnf("Failed to run tree command: %s", err)
-		}
-
-		printDirOwner(flutterSDKPath)
-	}
-
-	fmt.Println()
-	log.Infof("Flutter version")
-	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
-	log.Donef("$ %s", versionCmd.PrintableCommandArgs())
-	fmt.Println()
-	if err := versionCmd.Run(); err != nil {
-		return fmt.Errorf("failed to check flutter version, error: %s", err)
+	if err = EnsureFlutterVersion(&cfg, sdkVersions); err != nil {
+		return fmt.Errorf("failed to ensure Flutter version, error: %w", err)
 	}
 
 	if cfg.IsDebug {

@@ -4,11 +4,20 @@ import (
 	"testing"
 )
 
-const versionOut = `
-Flutter 1.7.1-pre.49 • channel master • https://github.com/flutter/flutter.git
-Framework • revision 6d554827b6 (80 minutes ago) • 2019-06-03 22:00:45 -0700
-Engine • revision 606a8ede2c
-Tools • Dart 2.3.2 (build 2.3.2-dev.0.0 5b72293f49)
+const versionMachineOut = `
+{
+  "frameworkVersion": "3.33.0-0.2.pre",
+  "channel": "beta",
+  "repositoryUrl": "https://github.com/flutter/flutter.git",
+  "frameworkRevision": "1db45f74082217508069268b2f66801ca87e8a9b",
+  "frameworkCommitDate": "2025-05-29 10:05:06 -0700",
+  "engineRevision": "308a517184276f9526eb6026e55cfcbde1e5ad1f",
+  "engineCommitDate": "2025-05-23 15:32:17 -0700",
+  "dartSdkVersion": "3.9.0 (build 3.9.0-100.2.beta)",
+  "devToolsVersion": "2.46.0",
+  "flutterVersion": "3.33.0-0.2.pre",
+  "flutterRoot": "/Users/vagrant/fvm/versions/3.33.0-0.2.pre"
+}
 `
 
 const versionOutWithBuild = `
@@ -37,33 +46,34 @@ Engine • revision 606a8ede2c
 Tools • Dart 2.3.2 (build 2.3.2-dev.0.0 5b72293f49)
 `
 
-func Test_matchVersion(t *testing.T) {
+func Test_matchFlutterOutputVersion(t *testing.T) {
 	tests := []struct {
 		name          string
 		versionOutput string
-		want          string
+		want          flutterVersion
 		wantErr       bool
 	}{
 		{
 			name:          "normal case",
-			versionOutput: versionOut,
-			want:          "1.7.1-pre.49",
+			versionOutput: versionMachineOut,
+			want:          flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: &FlutterInstallTypeFVM},
 		},
 		{
 			name:          "build flutter",
 			versionOutput: versionOutWithBuild,
-			want:          "1.7.1-pre.49",
+			want:          flutterVersion{version: "1.7.1-pre.49", channel: "master"},
 		},
 		{
 			name:          "not found",
 			versionOutput: noVersion,
-			want:          "",
+			want:          flutterVersion{},
 			wantErr:       true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := matchVersion(tt.versionOutput)
+			got, err := NewFlutterVersionFromFlutterMachineOutput(tt.versionOutput)
+			logger.Infof("got: %+v, err: %v", got, err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -75,39 +85,49 @@ func Test_matchVersion(t *testing.T) {
 	}
 }
 
-func Test_matchChannel(t *testing.T) {
+func TestNewFlutterVersionFromString(t *testing.T) {
 	tests := []struct {
-		name          string
-		versionOutput string
-		want          string
-		wantErr       bool
+		name    string
+		input   string
+		want    flutterVersion
+		wantErr bool
 	}{
 		{
-			name:          "normal case",
-			versionOutput: versionOut,
-			want:          "master",
+			name:  "valid version and channel",
+			input: "3.33.0-0.2.pre beta",
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta"},
 		},
 		{
-			name:          "build flutter",
-			versionOutput: versionOutWithBuild,
-			want:          "master",
+			name:  "valid version and channel (different order)",
+			input: "beta 3.33.0-0.2.pre",
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta"},
 		},
 		{
-			name:          "not found",
-			versionOutput: noVersion,
-			want:          "",
-			wantErr:       true,
+			name:  "missing version",
+			input: "main",
+			want:  flutterVersion{channel: "main"},
+		},
+		{
+			name:  "missing channel",
+			input: "3.33.0-0.2.pre",
+			want:  flutterVersion{version: "3.33.0-0.2.pre"},
+		},
+		{
+			name:    "invalid input",
+			input:   "foobar",
+			want:    flutterVersion{},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := matchChannel(tt.versionOutput)
+			got, err := NewFlutterVersionFromString(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("matchChannel() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewFlutterVersionFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("matchChannel() = %v, want %v", got, tt.want)
+			if got.version != tt.want.version || got.channel != tt.want.channel {
+				t.Errorf("NewFlutterVersionFromString() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}

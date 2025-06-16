@@ -10,13 +10,29 @@ func (g *Git) Init() *command.Model {
 }
 
 // Clone a repository into a new directory.
-func (g *Git) Clone(repo string) *command.Model {
-	return g.command("clone", repo, ".")
+func (g *Git) Clone(repo string, opts ...string) *command.Model {
+	args := []string{"clone"}
+	args = append(args, opts...)
+	args = append(args, repo)
+	args = append(args, ".")
+	return g.command(args...)
 }
 
 // CloneTagOrBranch is recursively clones a tag or branch.
-func (g *Git) CloneTagOrBranch(repo, tagOrBranch string) *command.Model {
-	return g.command("clone", "--recursive", "--branch", tagOrBranch, repo, ".")
+func (g *Git) CloneTagOrBranch(repo, tagOrBranch string, opts ...string) *command.Model {
+	args := []string{"clone"}
+	args = append(args, "--recursive")
+	args = append(args, []string{"--branch", tagOrBranch}...)
+	args = append(args, opts...)
+	args = append(args, repo)
+	args = append(args, ".")
+
+	return g.command(args...)
+}
+
+// RemoteBranches lists all the remote branches.
+func (g *Git) RemoteBranches() *command.Model {
+	return g.command("ls-remote", "-b")
 }
 
 // RemoteList shows a list of existing remote urls with remote names.
@@ -36,10 +52,11 @@ func (g *Git) Fetch(opts ...string) *command.Model {
 	return g.command(args...)
 }
 
-// Checkout switchs branches or restore working tree files.
-// Arg can be a commit hash, a branch or a tag.
-func (g *Git) Checkout(arg string) *command.Model {
-	return g.command("checkout", arg)
+// Checkout switches branches or restore working tree files.
+func (g *Git) Checkout(args ...string) *command.Model {
+	a := []string{"checkout"}
+	a = append(a, args...)
+	return g.command(a...)
 }
 
 // Merge joins two or more development histories together.
@@ -104,8 +121,11 @@ func (g *Git) Apply(patch string) *command.Model {
 }
 
 // Log shows the commit logs. The format parameter controls what is shown and how.
-func (g *Git) Log(format string) *command.Model {
-	return g.command("log", "-1", "--format="+format)
+// Revision range can be optionally specified using the opts parameter.
+func (g *Git) Log(format string, opts ...string) *command.Model {
+	args := []string{"log", "-1", "--format=" + format}
+	args = append(args, opts...)
+	return g.command(args...)
 }
 
 // RevList lists commit objects in reverse chronological order.
@@ -156,6 +176,14 @@ func (g *Git) SparseCheckoutInit(cone bool) *command.Model {
 // SparseCheckoutSet writes the provided patterns to the sparse-checkout config file.
 func (g *Git) SparseCheckoutSet(opts ...string) *command.Model {
 	args := []string{"sparse-checkout", "set"}
+	args = append(args, opts...)
+	return g.command(args...)
+}
+
+// UpdateRef updates the object name stored in a ref safely.
+// With -d flag, it deletes the named <ref>.
+func (g *Git) UpdateRef(opts ...string) *command.Model {
+	args := []string{"update-ref"}
 	args = append(args, opts...)
 	return g.command(args...)
 }

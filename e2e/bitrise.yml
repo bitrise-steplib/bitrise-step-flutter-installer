@@ -8,8 +8,15 @@ workflows:
     after_run:
     - _test_flutter_installation
     steps:
+    - script:
+        title: install go
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            bitrise setup
     - path::./:
-        run_if: true
+        run_if: "true"
         title: git install default
         inputs:
         - is_debug: "true"
@@ -21,11 +28,10 @@ workflows:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
+        run_if: "true"
         title: git install stable force update
         inputs:
         - version: stable
-        - is_update: "true"
         - is_debug: "true"
 
   test_bundle:
@@ -49,7 +55,7 @@ workflows:
             fi
             envman add --key "BUNDLE_URL" --value "${URL}"
     - path::./:
-        run_if: true
+        run_if: "true"
         title: platform specific bundle install
         inputs:
         - installation_bundle_url: $BUNDLE_URL
@@ -64,7 +70,7 @@ workflows:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
+        run_if: "true"
         title: git install dev
         inputs:
         - version: dev
@@ -77,7 +83,7 @@ workflows:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
+        run_if: "true"
         title: git install specific version
         inputs:
         - version: v1.7.1

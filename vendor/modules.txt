@@ -1,16 +1,17 @@
-# github.com/Masterminds/semver/v3 v3.2.1
+# github.com/Masterminds/semver/v3 v3.3.1
+## explicit; go 1.21
 github.com/Masterminds/semver/v3
 # github.com/bitrise-io/go-flutter v0.1.1
-## explicit
+## explicit; go 1.20
 github.com/bitrise-io/go-flutter/flutterproject
 github.com/bitrise-io/go-flutter/flutterproject/internal/sdk
 github.com/bitrise-io/go-flutter/fluttersdk
-# github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77
-## explicit
+# github.com/bitrise-io/go-steputils v1.0.6
+## explicit; go 1.15
 github.com/bitrise-io/go-steputils/stepconf
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20210517140706-aa64fd88ca49
-## explicit
+# github.com/bitrise-io/go-utils v1.0.15
+## explicit; go 1.13
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
 github.com/bitrise-io/go-utils/command/git
@@ -20,10 +21,10 @@ github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
 github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
-github.com/bitrise-io/go-utils/sliceutil
-# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.18
-## explicit
+# github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.25
+## explicit; go 1.17
 github.com/bitrise-io/go-utils/v2/analytics
+github.com/bitrise-io/go-utils/v2/command
 github.com/bitrise-io/go-utils/v2/env
 github.com/bitrise-io/go-utils/v2/errorutil
 github.com/bitrise-io/go-utils/v2/exitcode
@@ -32,13 +33,20 @@ github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
 github.com/bitrise-io/go-utils/v2/retryhttp
-# github.com/gofrs/uuid v4.3.1+incompatible
-github.com/gofrs/uuid
+# github.com/gofrs/uuid v4.4.0+incompatible
+## explicit
+# github.com/gofrs/uuid/v5 v5.3.2
+## explicit; go 1.19
+github.com/gofrs/uuid/v5
 # github.com/hashicorp/go-cleanhttp v0.5.2
+## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.7.1
+# github.com/hashicorp/go-retryablehttp v0.7.7
+## explicit; go 1.19
 github.com/hashicorp/go-retryablehttp
 # github.com/mitchellh/mapstructure v1.5.0
+## explicit; go 1.14
 github.com/mitchellh/mapstructure
 # gopkg.in/yaml.v3 v3.0.1
+## explicit
 gopkg.in/yaml.v3

@@ -63,18 +63,6 @@ inputs:
       To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
     is_required: false
 
-- is_update: "true"
-  opts:
-    title: Update to the latest version
-    summary: Set to true to update, if Flutter from a matching channel is preinstalled.
-    description: |-
-      If the version selected is `stable` and a preinstalled Flutter version from the `stable` channel with version 1.2.1 exists:
-      * Setting to `false` will not update, even if a later release exists.
-      * Setting to `true` will update Flutter to the latest version released in the channel.
-    value_options:
-    - "false"
-    - "true"
-
 - installation_bundle_url: ""
   opts:
     title: Flutter SDK installation bundle URL

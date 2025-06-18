@@ -46,52 +46,36 @@ Engine • revision 606a8ede2c
 Tools • Dart 2.3.2 (build 2.3.2-dev.0.0 5b72293f49)
 `
 
-func Test_matchFlutterOutputVersion(t *testing.T) {
-	tests := []struct {
-		name          string
-		versionOutput string
-		want          flutterVersion
-		wantErr       bool
-	}{
-		{
-			name:          "normal case",
-			versionOutput: versionMachineOut,
-			want:          flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: &FlutterInstallTypeFVM},
-		},
-		{
-			name:          "build flutter",
-			versionOutput: versionOutWithBuild,
-			want:          flutterVersion{version: "1.7.1-pre.49", channel: "master"},
-		},
-		{
-			name:          "not found",
-			versionOutput: noVersion,
-			want:          flutterVersion{},
-			wantErr:       true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFlutterVersionFromFlutterMachineOutput(tt.versionOutput)
-			logger.Infof("got: %+v, err: %v", got, err)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("matchVersion() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+const bundleURL = "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
 
-func TestNewFlutterVersionFromString(t *testing.T) {
+func Test_matchFlutterOutputVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
 		want    flutterVersion
 		wantErr bool
 	}{
+		{
+			name:  "normal case",
+			input: versionMachineOut,
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: &FlutterInstallTypeFVM},
+		},
+		{
+			name:  "build flutter",
+			input: versionOutWithBuild,
+			want:  flutterVersion{version: "1.7.1-pre.49", channel: "master"},
+		},
+		{
+			name:    "not found",
+			input:   noVersion,
+			want:    flutterVersion{},
+			wantErr: true,
+		},
+		{
+			name:  "bundle URL",
+			input: bundleURL,
+			want:  flutterVersion{version: "1.6.3", channel: "beta"},
+		},
 		{
 			name:  "valid version and channel",
 			input: "3.33.0-0.2.pre beta",
@@ -108,6 +92,11 @@ func TestNewFlutterVersionFromString(t *testing.T) {
 			want:  flutterVersion{channel: "main"},
 		},
 		{
+			name:  "dev channel",
+			input: "dev",
+			want:  flutterVersion{channel: "dev"},
+		},
+		{
 			name:  "missing channel",
 			input: "3.33.0-0.2.pre",
 			want:  flutterVersion{version: "3.33.0-0.2.pre"},
@@ -121,13 +110,14 @@ func TestNewFlutterVersionFromString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFlutterVersionFromString(tt.input)
+			got, err := NewFlutterVersion(tt.input)
+			logger.Infof("got: %+v, err: %v", got, err)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewFlutterVersionFromString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got.version != tt.want.version || got.channel != tt.want.channel {
-				t.Errorf("NewFlutterVersionFromString() = %+v, want %+v", got, tt.want)
+			if got != tt.want {
+				t.Errorf("matchVersion() = %v, want %v", got, tt.want)
 			}
 		})
 	}

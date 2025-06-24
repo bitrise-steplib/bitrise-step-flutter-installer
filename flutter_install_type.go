@@ -24,12 +24,12 @@ type FlutterInstallType struct {
 var FlutterInstallTypeFVM = FlutterInstallType{
 	Name:              "fvm",
 	CheckAvailability: func() bool { return command.New("fvm", "--version").Run() == nil },
-	VersionsCommand:   command.New("fvm", "list"),
+	VersionsCommand:   command.New("fvm", "api", "list", "--skip-size-calculation"),
 	InstallCommand: func(version flutterVersion) *command.Model {
-		return command.New("fvm", "install", fvmCreateVersionString(version)).SetEnvs("CI=true")
+		return command.New("export", "CI=true", "&&", "fvm", "install", fvmCreateVersionString(version), "--setup")
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Model {
-		return command.New("fvm", "global", fvmCreateVersionString(version)).SetEnvs("CI=true")
+		return command.New("export", "CI=true", "&&", "fvm", "global", fvmCreateVersionString(version))
 	},
 }
 
@@ -52,10 +52,10 @@ var FlutterInstallTypeAsdf = FlutterInstallType{
 	CheckAvailability: func() bool { return command.New("asdf", "--version").Run() == nil },
 	VersionsCommand:   command.New("asdf", "list", "flutter"),
 	InstallCommand: func(version flutterVersion) *command.Model {
-		return command.New("asdf", "install", "flutter", asdfCreateVersionString(version)).SetEnvs("CI=true")
+		return command.New("export", "CI=true", "&&", "asdf", "install", "flutter", asdfCreateVersionString(version))
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Model {
-		return command.New("asdf", "global", "flutter", asdfCreateVersionString(version)).SetEnvs("CI=true")
+		return command.New("export", "CI=true", "&&", "asdf", "global", "flutter", asdfCreateVersionString(version))
 	},
 }
 

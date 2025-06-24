@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
@@ -123,10 +122,7 @@ func unarchiveBundle(tarPth, targetDir string) error {
 	// using -J to support tar.xz
 	// --no-same-owner to NOT preserve owners (default is to preserve, if ran as user 'root'),
 	// we want to set to current user as owner to prevent error due to git configuration (https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory)
-	tarCmd, err := command.NewWithParams("tar", "--no-same-owner", "-xJf", tarPth, "-C", targetDir)
-	if err != nil {
-		return fmt.Errorf("failed to create command, error: %s", err)
-	}
+	tarCmd := cmdFactory.Create("tar", []string{"--no-same-owner", "-xJf", tarPth, "-C", targetDir}, nil)
 
 	logger.Donef("$ %s", tarCmd.PrintableCommandArgs())
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
@@ -136,7 +132,7 @@ func unarchiveBundle(tarPth, targetDir string) error {
 		if errors.As(err, &exitErr) {
 			return fmt.Errorf("tar command failed: %s, out: %s", err, out)
 		}
-		return fmt.Errorf("failed to run tar command, error: %s", err)
+		return fmt.Errorf("run tar command: %s", err)
 	}
 
 	return nil

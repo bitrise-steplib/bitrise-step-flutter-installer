@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+var channels = []string{
+	"stable",
+	"beta",
+	"dev",
+	"main",
+	"master",
+}
+
 type flutterVersion struct {
 	version     string
 	channel     string
@@ -29,7 +37,7 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 			channel = c
 		}
 		if version == "" && channel == "" {
-			return flutterVersion{}, fmt.Errorf("failed to find flutter version and channel in JSON output")
+			return flutterVersion{}, fmt.Errorf("find flutter version and channel in JSON output")
 		}
 		if m, ok := data["flutterRoot"].(string); ok && m != "" {
 			if strings.Contains(m, FlutterInstallTypeFVM.Name) {
@@ -51,8 +59,8 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 
 func newFlutterVersionFromString(input string) (flutterVersion, error) {
 	versionRegexp := regexp.MustCompile(`v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`)
-	channelRegexp := regexp.MustCompile(`(?i)\b(stable|beta|dev|main|master)\b`)
-	disallowedSuffixes := []string{"-beta", "-stable", "-dev", "-main", "-master"}
+	channelsString := strings.Join(channels, "|")
+	channelRegexp := regexp.MustCompile(`(?i)\b(` + channelsString + `)\b`)
 
 	var version, channel string
 	lines := strings.Split(input, "\n")
@@ -65,7 +73,8 @@ func newFlutterVersionFromString(input string) (flutterVersion, error) {
 			match := versionRegexp.FindString(line)
 			if match != "" {
 				match = strings.TrimPrefix(match, "v")
-				for _, suffix := range disallowedSuffixes {
+				for _, channel := range channels {
+					suffix := fmt.Sprintf("-%s", channel)
 					if index := strings.Index(match, suffix); index != -1 {
 						match = match[:index]
 					}
@@ -84,7 +93,7 @@ func newFlutterVersionFromString(input string) (flutterVersion, error) {
 		}
 	}
 	if version == "" && channel == "" {
-		return flutterVersion{}, fmt.Errorf("failed to parse flutter version and channel from input")
+		return flutterVersion{}, fmt.Errorf("parse flutter version and channel from input")
 	}
 
 	return flutterVersion{

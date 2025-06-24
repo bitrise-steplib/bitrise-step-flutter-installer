@@ -36,13 +36,13 @@ func run() exitcode.ExitCode {
 	config, err := flutterInstaller.ProcessConfig()
 	if err != nil {
 		logger.Println()
-		logger.Errorf(errorutil.FormattedError(fmt.Errorf("failed to process Step inputs: %w", err)))
+		logger.Errorf(errorutil.FormattedError(fmt.Errorf("process Step inputs: %w", err)))
 		return exitcode.Failure
 	}
 
 	if err := flutterInstaller.Run(config); err != nil {
 		logger.Println()
-		logger.Errorf(errorutil.FormattedError(fmt.Errorf("failed to execute Step: %w", err)))
+		logger.Errorf(errorutil.FormattedError(fmt.Errorf("execute Step: %w", err)))
 		return exitcode.Failure
 	}
 
@@ -104,11 +104,11 @@ func (b FlutterInstaller) Run(cfg Config) error {
 	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
 	var sdkVersions *flutterproject.FlutterAndDartSDKVersions
 	if err != nil {
-		logger.Warnf("Failed to open project: %s", err)
+		logger.Warnf("open project: %s", err)
 	} else {
 		sdkVersions, err := proj.FlutterAndDartSDKVersions()
 		if err != nil {
-			logger.Warnf("Failed to read project SDK versions: %s", err)
+			logger.Warnf("read project SDK versions: %s", err)
 		} else {
 			stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
 			stepTracker.LogSDKVersions(sdkVersions)
@@ -117,7 +117,7 @@ func (b FlutterInstaller) Run(cfg Config) error {
 	}
 
 	if err = EnsureFlutterVersion(&cfg, sdkVersions); err != nil {
-		return fmt.Errorf("failed to ensure Flutter version, error: %w", err)
+		return fmt.Errorf("ensure Flutter version: %w", err)
 	}
 
 	if cfg.IsDebug {
@@ -141,20 +141,7 @@ func runFlutterDoctor() error {
 	logger.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 	logger.Println()
 	if err := doctorCmd.Run(); err != nil {
-		return fmt.Errorf("failed to check flutter doctor, error: %s", err)
+		return fmt.Errorf("check flutter doctor: %s", err)
 	}
 	return nil
-}
-
-func printDirOwner(flutterSDKPath string) {
-	cmdOpts := command.Opts{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-	dirOwnerCmd := cmdFactory.Create("ls", []string{"-al", flutterSDKPath}, &cmdOpts)
-	logger.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
-	logger.Println()
-	if err := dirOwnerCmd.Run(); err != nil {
-		logger.Warnf("Failed to run ls: %s", err)
-	}
 }

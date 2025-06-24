@@ -93,11 +93,11 @@ func downloadFlutterSDK(cfg *Config) error {
 
 	logger.Printf("Cleaning SDK target path: %s", sdkPathParent)
 	if err := os.RemoveAll(sdkPathParent); err != nil {
-		return fmt.Errorf("failed to remove path(%s), error: %s", sdkPathParent, err)
+		return fmt.Errorf("remove path(%s): %s", sdkPathParent, err)
 	}
 
 	if err := os.MkdirAll(sdkPathParent, 0770); err != nil {
-		return fmt.Errorf("failed to create folder (%s), error: %s", sdkPathParent, err)
+		return fmt.Errorf("create folder (%s): %s", sdkPathParent, err)
 	}
 
 	if cfg.BundleSpecified {
@@ -105,7 +105,7 @@ func downloadFlutterSDK(cfg *Config) error {
 		logger.Infof("Downloading and unarchiving Flutter from installation bundle: %s", cfg.BundleURL)
 
 		if err := downloadAndUnarchiveBundle(cfg.BundleURL, sdkPathParent); err != nil {
-			return fmt.Errorf("failed to download and unarchive bundle, error: %s", err)
+			return fmt.Errorf("download and unarchive bundle: %s", err)
 		}
 	} else {
 		logger.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
@@ -135,11 +135,11 @@ func downloadFlutterSDK(cfg *Config) error {
 	path += ":" + os.Getenv("PATH")
 
 	if err := os.Setenv("PATH", path); err != nil {
-		return fmt.Errorf("failed to set env, error: %s", err)
+		return fmt.Errorf("set env: %s", err)
 	}
 
 	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
-		return fmt.Errorf("failed to export env with envman, error: %s", err)
+		return fmt.Errorf("export env with envman: %s", err)
 	}
 
 	logger.Donef("Added to $PATH")
@@ -148,7 +148,7 @@ func downloadFlutterSDK(cfg *Config) error {
 	if cfg.IsDebug {
 		flutterBinPath, err := exec.LookPath("flutter")
 		if err != nil {
-			return fmt.Errorf("failed to get Flutter binary path")
+			return fmt.Errorf("get Flutter binary path")
 		}
 		logger.Infof("Flutter binary path: %s", flutterBinPath)
 
@@ -160,7 +160,7 @@ func downloadFlutterSDK(cfg *Config) error {
 		logger.Donef("$ %s", treeCmd.PrintableCommandArgs())
 		logger.Println()
 		if err := treeCmd.Run(); err != nil {
-			logger.Warnf("Failed to run tree command: %s", err)
+			logger.Warnf("run tree command: %s", err)
 		}
 
 		printDirOwner(flutterSDKPath)
@@ -176,14 +176,21 @@ func downloadFlutterSDK(cfg *Config) error {
 	logger.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	logger.Println()
 	if err := versionCmd.Run(); err != nil {
-		return fmt.Errorf("failed to check flutter version, error: %s", err)
-	}
-
-	if cfg.IsDebug {
-		if err := runFlutterDoctor(); err != nil {
-			return err
-		}
+		return fmt.Errorf("check flutter version: %s", err)
 	}
 
 	return nil
+}
+
+func printDirOwner(flutterSDKPath string) {
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	dirOwnerCmd := cmdFactory.Create("ls", []string{"-al", flutterSDKPath}, &cmdOpts)
+	logger.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
+	logger.Println()
+	if err := dirOwnerCmd.Run(); err != nil {
+		logger.Warnf("run ls: %s", err)
+	}
 }

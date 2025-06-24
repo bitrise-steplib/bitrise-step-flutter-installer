@@ -8,18 +8,22 @@ import (
 
 	"github.com/bitrise-io/go-flutter/flutterproject"
 	"github.com/bitrise-io/go-flutter/fluttersdk"
-	"github.com/bitrise-io/go-steputils/stepconf"
-	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
-	exitcode "github.com/bitrise-io/go-utils/v2/exitcode"
+	"github.com/bitrise-io/go-utils/v2/exitcode"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+
 	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
+// TODO: organize
 var logger = logv2.NewLogger()
+var envRepo = env.NewRepository()
+var cmdFactory = command.NewFactory(envRepo)
 
 func main() {
 	exitCode := run()
@@ -27,9 +31,7 @@ func main() {
 }
 
 func run() exitcode.ExitCode {
-	logger := logv2.NewLogger()
-
-	flutterInstaller := NewFlutterInstaller()
+	flutterInstaller := NewFlutterInstaller(envRepo)
 
 	config, err := flutterInstaller.ProcessConfig()
 	if err != nil {
@@ -59,15 +61,19 @@ type Config struct {
 }
 
 type FlutterInstaller struct {
+	envRepo env.Repository
 }
 
-func NewFlutterInstaller() FlutterInstaller {
-	return FlutterInstaller{}
+func NewFlutterInstaller(envRepo env.Repository) FlutterInstaller {
+	return FlutterInstaller{
+		envRepo: envRepo,
+	}
 }
 
 func (b FlutterInstaller) ProcessConfig() (Config, error) {
 	var input Input
-	if err := stepconf.Parse(&input); err != nil {
+	envRepo := env.NewRepository()
+	if err := stepconf.NewInputParser(envRepo).Parse(&input); err != nil {
 		return Config{}, err
 	}
 	stepconf.Print(input)
@@ -126,7 +132,12 @@ func (b FlutterInstaller) Run(cfg Config) error {
 func runFlutterDoctor() error {
 	logger.Println()
 	logger.Infof("Check flutter doctor")
-	doctorCmd := command.New("flutter", "doctor").SetStdout(os.Stdout).SetStderr(os.Stderr)
+
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	doctorCmd := cmdFactory.Create("flutter", []string{"doctor"}, &cmdOpts)
 	logger.Donef("$ %s", doctorCmd.PrintableCommandArgs())
 	logger.Println()
 	if err := doctorCmd.Run(); err != nil {
@@ -136,7 +147,11 @@ func runFlutterDoctor() error {
 }
 
 func printDirOwner(flutterSDKPath string) {
-	dirOwnerCmd := command.NewWithStandardOuts("ls", "-al", flutterSDKPath)
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	dirOwnerCmd := cmdFactory.Create("ls", []string{"-al", flutterSDKPath}, &cmdOpts)
 	logger.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
 	logger.Println()
 	if err := dirOwnerCmd.Run(); err != nil {

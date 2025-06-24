@@ -7,31 +7,31 @@ import (
 	"path/filepath"
 
 	"github.com/bitrise-io/go-steputils/tools"
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/command/git"
+	"github.com/bitrise-io/go-utils/v2/command"
 )
 
 type FlutterInstallType struct {
 	Name              string
-	CheckAvailability func() bool                                 // function to check if the tool is available
-	IsAvailable       bool                                        // if the tool is available, this will be set to true later
-	VersionsCommand   *command.Model                              // command to list available versions installed by the tool
-	InstallCommand    func(version flutterVersion) *command.Model // function to install a specific version
-	SetDefaultCommand func(version flutterVersion) *command.Model // function to set a specific version as default
-	FullInstall       func(cfg *Config) error                     // function to perform a full install, if needed
+	CheckAvailability func() bool                                   // function to check if the tool is available
+	IsAvailable       bool                                          // if the tool is available, this will be set to true later
+	VersionsCommand   command.Command                               // command to list available versions installed by the tool
+	InstallCommand    func(version flutterVersion) command.Command  // function to install a specific version
+	SetDefaultCommand func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
+	FullInstall       func(cfg *Config) error                       // function to perform a full install, if needed
 }
 
 var FlutterInstallTypeFVM = FlutterInstallType{
 	Name:              "fvm",
-	CheckAvailability: func() bool { return command.New("fvm", "--version").Run() == nil },
-	VersionsCommand:   command.New("fvm", "api", "list", "--skip-size-calculation"),
-	InstallCommand: func(version flutterVersion) *command.Model {
+	CheckAvailability: func() bool { return cmdFactory.Create("fvm", []string{"--version"}, nil).Run() == nil },
+	VersionsCommand:   cmdFactory.Create("fvm", []string{"api", "list", "--skip-size-calculation"}, nil),
+	InstallCommand: func(version flutterVersion) command.Command {
 		commandString := `"export CI=true && fvm install ` + fvmCreateVersionString(version) + ` --setup"`
-		return command.New("bash", "-c", commandString)
+		return cmdFactory.Create("bash", []string{"-c", commandString}, nil)
 	},
-	SetDefaultCommand: func(version flutterVersion) *command.Model {
+	SetDefaultCommand: func(version flutterVersion) *command.Command {
 		commandString := `"export CI=true && fvm global ` + fvmCreateVersionString(version) + `"`
-		return command.New("bash", "-c", commandString)
+		cmd := cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		return &cmd
 	},
 }
 
@@ -51,15 +51,16 @@ func fvmCreateVersionString(version flutterVersion) string {
 
 var FlutterInstallTypeAsdf = FlutterInstallType{
 	Name:              "asdf",
-	CheckAvailability: func() bool { return command.New("asdf", "--version").Run() == nil },
-	VersionsCommand:   command.New("asdf", "list", "flutter"),
-	InstallCommand: func(version flutterVersion) *command.Model {
+	CheckAvailability: func() bool { return cmdFactory.Create("asdf", []string{"--version"}, nil).Run() == nil },
+	VersionsCommand:   cmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
+	InstallCommand: func(version flutterVersion) command.Command {
 		commandString := `"export CI=true && asdf install flutter ` + asdfCreateVersionString(version) + `"`
-		return command.New("bash", "-c", commandString)
+		return cmdFactory.Create("bash", []string{"-c", commandString}, nil)
 	},
-	SetDefaultCommand: func(version flutterVersion) *command.Model {
+	SetDefaultCommand: func(version flutterVersion) *command.Command {
 		commandString := `"export CI=true && asdf global flutter ` + asdfCreateVersionString(version) + `"`
-		return command.New("bash", "-c", commandString)
+		cmd := cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		return &cmd
 	},
 }
 
@@ -76,7 +77,7 @@ func asdfCreateVersionString(version flutterVersion) string {
 var FlutterInstallTypeManual = FlutterInstallType{
 	Name:              "manual",
 	CheckAvailability: func() bool { return true },
-	VersionsCommand:   command.New("flutter", "--version"),
+	VersionsCommand:   cmdFactory.Create("flutter", []string{"--version"}, nil),
 	FullInstall: func(cfg *Config) error {
 		return downloadFlutterSDK(cfg)
 	},
@@ -111,13 +112,16 @@ func downloadFlutterSDK(cfg *Config) error {
 		logger.Infof("Selected branch/tag: %s", cfg.Version)
 
 		// repository name ('flutter') is in the path, will be checked out there
-		gitRepo, err := git.New(flutterSDKPath)
+		cmd := cmdFactory.Create("git", []string{
+			"clone",
+			"https://github.com/flutter/flutter.git",
+			flutterSDKPath,
+			"--depth", "1",
+			"--branch", cfg.Version,
+		}, nil)
+		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
-			return fmt.Errorf("failed to open git repo, error: %s", err)
-		}
-
-		if err := gitRepo.CloneTagOrBranch("https://github.com/flutter/flutter.git", cfg.Version).Run(); err != nil {
-			return fmt.Errorf("failed to clone git repo for tag/branch: %s, error: %s", cfg.Version, err)
+			return fmt.Errorf("clone git repo for tag/branch: %s: %s", cfg.Version, out)
 		}
 	}
 
@@ -148,7 +152,11 @@ func downloadFlutterSDK(cfg *Config) error {
 		}
 		logger.Infof("Flutter binary path: %s", flutterBinPath)
 
-		treeCmd := command.New("tree", "-L", "3", sdkPathParent).SetStdout(os.Stdout).SetStderr(os.Stderr)
+		cmdOpts := command.Opts{
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		treeCmd := cmdFactory.Create("tree", []string{"-L", "3", sdkPathParent}, &cmdOpts)
 		logger.Donef("$ %s", treeCmd.PrintableCommandArgs())
 		logger.Println()
 		if err := treeCmd.Run(); err != nil {
@@ -160,7 +168,11 @@ func downloadFlutterSDK(cfg *Config) error {
 
 	logger.Println()
 	logger.Infof("Flutter version")
-	versionCmd := command.New("flutter", "--version").SetStdout(os.Stdout).SetStderr(os.Stderr)
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	versionCmd := cmdFactory.Create("flutter", []string{"--version"}, &cmdOpts)
 	logger.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	logger.Println()
 	if err := versionCmd.Run(); err != nil {

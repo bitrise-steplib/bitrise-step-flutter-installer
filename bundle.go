@@ -1,20 +1,20 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
 func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
@@ -74,7 +74,7 @@ func downloadBundle(bundleURL string) (string, error) {
 	var resp *http.Response
 	if err := retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
-			log.TWarnf("%d query attempt failed", attempt)
+			logger.TWarnf("%d query attempt failed", attempt)
 		}
 
 		var err error
@@ -97,7 +97,7 @@ func downloadBundle(bundleURL string) (string, error) {
 		return "", err
 	}
 
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("__flutter-sdk__")
+	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("__flutter-sdk__")
 	if err != nil {
 		return "", err
 	}
@@ -128,11 +128,12 @@ func unarchiveBundle(tarPth, targetDir string) error {
 		return fmt.Errorf("failed to create command, error: %s", err)
 	}
 
-	log.Donef("$ %s", tarCmd.PrintableCommandArgs())
+	logger.Donef("$ %s", tarCmd.PrintableCommandArgs())
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)
 	if err != nil {
-		if errorutil.IsExitStatusError(err) {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
 			return fmt.Errorf("tar command failed: %s, out: %s", err, out)
 		}
 		return fmt.Errorf("failed to run tar command, error: %s", err)

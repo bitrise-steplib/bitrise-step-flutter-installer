@@ -8,8 +8,10 @@ github.com/bitrise-io/go-flutter/flutterproject/internal/sdk
 github.com/bitrise-io/go-flutter/fluttersdk
 # github.com/bitrise-io/go-steputils v1.0.6
 ## explicit; go 1.15
-github.com/bitrise-io/go-steputils/stepconf
 github.com/bitrise-io/go-steputils/tools
+# github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.37
+## explicit; go 1.17
+github.com/bitrise-io/go-steputils/v2/stepconf
 # github.com/bitrise-io/go-utils v1.0.15
 ## explicit; go 1.13
 github.com/bitrise-io/go-utils/colorstring
@@ -17,9 +19,7 @@ github.com/bitrise-io/go-utils/command
 github.com/bitrise-io/go-utils/command/git
 github.com/bitrise-io/go-utils/errorutil
 github.com/bitrise-io/go-utils/log
-github.com/bitrise-io/go-utils/parseutil
 github.com/bitrise-io/go-utils/pathutil
-github.com/bitrise-io/go-utils/pointers
 github.com/bitrise-io/go-utils/retry
 # github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.25
 ## explicit; go 1.17
@@ -33,8 +33,6 @@ github.com/bitrise-io/go-utils/v2/log
 github.com/bitrise-io/go-utils/v2/log/colorstring
 github.com/bitrise-io/go-utils/v2/pathutil
 github.com/bitrise-io/go-utils/v2/retryhttp
-# github.com/gofrs/uuid v4.4.0+incompatible
-## explicit
 # github.com/gofrs/uuid/v5 v5.3.2
 ## explicit; go 1.19
 github.com/gofrs/uuid/v5

@@ -26,10 +26,12 @@ var FlutterInstallTypeFVM = FlutterInstallType{
 	CheckAvailability: func() bool { return command.New("fvm", "--version").Run() == nil },
 	VersionsCommand:   command.New("fvm", "api", "list", "--skip-size-calculation"),
 	InstallCommand: func(version flutterVersion) *command.Model {
-		return command.New("export", "CI=true", "&&", "fvm", "install", fvmCreateVersionString(version), "--setup")
+		commandString := `"export CI=true && fvm install ` + fvmCreateVersionString(version) + ` --setup"`
+		return command.New("bash", "-c", commandString)
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Model {
-		return command.New("export", "CI=true", "&&", "fvm", "global", fvmCreateVersionString(version))
+		commandString := `"export CI=true && fvm global ` + fvmCreateVersionString(version) + `"`
+		return command.New("bash", "-c", commandString)
 	},
 }
 
@@ -52,10 +54,12 @@ var FlutterInstallTypeAsdf = FlutterInstallType{
 	CheckAvailability: func() bool { return command.New("asdf", "--version").Run() == nil },
 	VersionsCommand:   command.New("asdf", "list", "flutter"),
 	InstallCommand: func(version flutterVersion) *command.Model {
-		return command.New("export", "CI=true", "&&", "asdf", "install", "flutter", asdfCreateVersionString(version))
+		commandString := `"export CI=true && asdf install flutter ` + asdfCreateVersionString(version) + `"`
+		return command.New("bash", "-c", commandString)
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Model {
-		return command.New("export", "CI=true", "&&", "asdf", "global", "flutter", asdfCreateVersionString(version))
+		commandString := `"export CI=true && asdf global flutter ` + asdfCreateVersionString(version) + `"`
+		return command.New("bash", "-c", commandString)
 	},
 }
 

@@ -143,9 +143,9 @@ func installAndSetDefault(installType *FlutterInstallType, version flutterVersio
 		}
 	}
 
-	logger.Donef("Flutter version %s (%s) installed successfully with %s", version.version, version.channel, installType.Name)
+	logger.Donef("Flutter version %s %s installed successfully with %s", version.version, version.channel, installType.Name)
 	if installType.SetDefaultCommand != nil {
-		logger.Debugf("Setting Flutter version to %s (%s) with %s", version.version, version.channel, installType.Name)
+		logger.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
 		setCmd := installType.SetDefaultCommand(version)
 		logger.Debugf("$ %s", setCmd.PrintableCommandArgs())
 

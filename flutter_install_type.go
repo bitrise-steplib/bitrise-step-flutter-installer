@@ -25,12 +25,16 @@ var FlutterInstallTypeFVM = FlutterInstallType{
 	CheckAvailability: func() bool { return cmdFactory.Create("fvm", []string{"--version"}, nil).Run() == nil },
 	VersionsCommand:   cmdFactory.Create("fvm", []string{"api", "list", "--skip-size-calculation"}, nil),
 	InstallCommand: func(version flutterVersion) command.Command {
-		commandString := `"export CI=true && fvm install ` + fvmCreateVersionString(version) + ` --setup"`
-		return cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		options := command.Opts{
+			Env: []string{"CI=true"},
+		}
+		return cmdFactory.Create("fvm", []string{"install", fvmCreateVersionString(version), "--setup"}, &options)
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Command {
-		commandString := `"export CI=true && fvm global ` + fvmCreateVersionString(version) + `"`
-		cmd := cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		options := command.Opts{
+			Env: []string{"CI=true"},
+		}
+		cmd := cmdFactory.Create("fvm", []string{"global", fvmCreateVersionString(version)}, &options)
 		return &cmd
 	},
 }
@@ -54,12 +58,16 @@ var FlutterInstallTypeAsdf = FlutterInstallType{
 	CheckAvailability: func() bool { return cmdFactory.Create("asdf", []string{"--version"}, nil).Run() == nil },
 	VersionsCommand:   cmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
 	InstallCommand: func(version flutterVersion) command.Command {
-		commandString := `"export CI=true && asdf install flutter ` + asdfCreateVersionString(version) + `"`
-		return cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		options := command.Opts{
+			Env: []string{"CI=true"},
+		}
+		return cmdFactory.Create("asdf", []string{"install", "flutter", asdfCreateVersionString(version)}, &options)
 	},
 	SetDefaultCommand: func(version flutterVersion) *command.Command {
-		commandString := `"export CI=true && asdf global flutter ` + asdfCreateVersionString(version) + `"`
-		cmd := cmdFactory.Create("bash", []string{"-c", commandString}, nil)
+		options := command.Opts{
+			Env: []string{"CI=true"},
+		}
+		cmd := cmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, &options)
 		return &cmd
 	},
 }

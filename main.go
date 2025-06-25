@@ -43,7 +43,7 @@ func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory
 func run() exitcode.ExitCode {
 	f, err := ConfigureFlutterInstaller()
 	if err != nil {
-		f.Errorf(errorutil.FormattedError(fmt.Errorf("process Step inputs: %w", err)))
+		logv2.NewLogger().Errorf(errorutil.FormattedError(fmt.Errorf("process Step inputs: %w", err)))
 		return exitcode.Failure
 	}
 
@@ -66,12 +66,12 @@ type Config struct {
 	BundleSpecified bool
 }
 
-func ConfigureFlutterInstaller() (FlutterInstaller, error) {
+func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	envRepo := env.NewRepository()
 
 	var input Input
 	if err := stepconf.NewInputParser(envRepo).Parse(&input); err != nil {
-		return FlutterInstaller{}, err
+		return &FlutterInstaller{}, err
 	}
 	stepconf.Print(input)
 
@@ -81,9 +81,9 @@ func ConfigureFlutterInstaller() (FlutterInstaller, error) {
 	bundleSpecified := strings.TrimSpace(input.BundleURL) != ""
 	gitBranchSpecified := strings.TrimSpace(input.Version) != ""
 	if !bundleSpecified && !gitBranchSpecified {
-		return FlutterInstaller{}, errors.New(`one of the following inputs needs to be specified:
-"Flutter SDK git repository version" (version)
-"Flutter SDK installation bundle URL" (installation_bundle_url)`)
+		return &FlutterInstaller{}, errors.New(`one of the following inputs needs to be specified:
+	"Flutter SDK git repository version" (version)
+	"Flutter SDK installation bundle URL" (installation_bundle_url)`)
 	}
 
 	if bundleSpecified && gitBranchSpecified {
@@ -107,7 +107,7 @@ func ConfigureFlutterInstaller() (FlutterInstaller, error) {
 
 	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, config)
 
-	return fi, nil
+	return &fi, nil
 }
 
 func (f *FlutterInstaller) Run() error {

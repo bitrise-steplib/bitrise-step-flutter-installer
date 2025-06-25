@@ -41,7 +41,7 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 
 	for _, installType := range installTypes {
 		if installType.CheckAvailability == nil || !installType.CheckAvailability() {
-			f.Debugf("Flutter install tool %s is not available, skipping", installType.Name)
+			f.Debugf("Flutter install tool %s is not available", installType.Name)
 			continue
 		} else {
 			installType.IsAvailable = true
@@ -49,14 +49,13 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 
 		err := f.setDefaultIfInstalled(installType, requiredVersion)
 		if err != nil {
-			f.Debugf("set Flutter version with %s: %s", installType.Name, err)
+			f.Debugf("set installed Flutter version with %s: %s", installType.Name, err)
 		} else if installed, _ := f.comapareVersionToCurrent(requiredVersion); installed {
 			f.Infof("Flutter version %s (%s) is installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
 			return nil
 		}
 	}
 
-	f.Infof("Installing Flutter version: %s channel: %s...", requiredVersion.version, requiredVersion.channel)
 	for _, installType := range installTypes {
 		if !installType.IsAvailable {
 			continue
@@ -64,7 +63,14 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 
 		err := f.installAndSetDefault(installType, requiredVersion)
 		if err != nil {
-			f.Debugf("%s", err)
+			f.Debugf("install and set default: %s", err)
+
+			if out, err := installType.VersionsCommand.RunAndReturnTrimmedOutput(); err != nil {
+				f.Debugf("list Flutter versions with %s: %s", installType.Name, out)
+				return nil
+			} else {
+				f.Debugf("Listing Flutter versions with %s: %s", installType.Name, out)
+			}
 		} else if installed, _ = f.comapareVersionToCurrent(requiredVersion); installed {
 			f.Infof("Flutter version %s (%s) installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
 			return nil
@@ -146,10 +152,11 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 	if installType.SetDefaultCommand != nil {
 		f.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
 		setCmd := *installType.SetDefaultCommand(version)
-		f.Debugf("$ %s", setCmd.PrintableCommandArgs)
 
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set Flutter version with %s: %s", installType.Name, out)
+		} else {
+			f.Debugf("Set Flutter version output: %s", out)
 		}
 	}
 	return nil

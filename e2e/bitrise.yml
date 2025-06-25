@@ -37,6 +37,13 @@ workflows:
     after_run:
     - _test_flutter_installation
     steps:
+    - script:
+        title: bitrise setup
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            bitrise setup 
     - path::./:
         run_if: "true"
         title: git install default

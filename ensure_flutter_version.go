@@ -66,8 +66,7 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 			f.Debugf("install and set default: %s", err)
 
 			if out, err := installType.VersionsCommand.RunAndReturnTrimmedOutput(); err != nil {
-				f.Debugf("list Flutter versions with %s: %s", installType.Name, out)
-				return nil
+				f.Debugf("list Flutter versions with %s: %s %s", installType.Name, err, out)
 			} else {
 				f.Debugf("Listing Flutter versions with %s: %s", installType.Name, out)
 			}

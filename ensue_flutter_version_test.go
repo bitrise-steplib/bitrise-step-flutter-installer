@@ -58,7 +58,7 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 		{
 			name:  "normal case",
 			input: versionMachineOut,
-			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: &FlutterInstallTypeFVM},
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: FVMName},
 		},
 		{
 			name:  "build flutter",
@@ -111,7 +111,6 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewFlutterVersion(tt.input)
-			logger.Infof("got: %+v, err: %v", got, err)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -9,64 +9,64 @@ import (
 	"github.com/bitrise-io/go-flutter/flutterproject"
 )
 
-func EnsureFlutterVersion(cfg *Config, sdkVersions *flutterproject.FlutterAndDartSDKVersions) error {
-	requiredVersion, err := fetchFlutterVersion(cfg, sdkVersions)
+func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.FlutterAndDartSDKVersions) error {
+	requiredVersion, err := f.fetchFlutterVersion(sdkVersions)
 	if err != nil {
 		return fmt.Errorf("fetch required Flutter version: %w", err)
 	}
-	logger.Infof("Required Flutter version: %s (%s)", requiredVersion.version, requiredVersion.channel)
+	f.Infof("Required Flutter version: %s channel: %s)", requiredVersion.version, requiredVersion.channel)
 
-	installed, currentVersion := comapareVersionToCurrent(requiredVersion)
+	installed, currentVersion := f.comapareVersionToCurrent(requiredVersion)
 	if installed {
-		logger.Infof("Flutter version %s (%s) is already installed", requiredVersion.version,
+		f.Infof("Flutter version %s (%s) is already installed", requiredVersion.version,
 			requiredVersion.channel)
 		return nil
 	}
 
-	var primaryManager = &FlutterInstallTypeFVM
-	var secondaryManager = &FlutterInstallTypeAsdf
-	if currentVersion.installType == &FlutterInstallTypeAsdf {
-		primaryManager = &FlutterInstallTypeAsdf
-		secondaryManager = &FlutterInstallTypeFVM
+	fvm, asdf, manual := f.NewFlutterInstallTypeFVM(), f.NewFlutterInstallTypeASDF(), f.NewFlutterInstallTypeManual()
+
+	var primaryManager = fvm
+	var secondaryManager = asdf
+	if currentVersion.installType == ASDFName {
+		primaryManager = asdf
+		secondaryManager = fvm
 	}
 	var installTypes []*FlutterInstallType
-	if cfg.BundleSpecified && cfg.BundleURL != "" {
-		logger.Infof("Using Flutter version from bundle: %s", cfg.BundleURL)
-		installTypes = []*FlutterInstallType{&FlutterInstallTypeManual, primaryManager, secondaryManager} // Manual install first, then FVM and ASDF as fallback
+	if f.Config.BundleSpecified && f.Config.BundleURL != "" {
+		f.Infof("Using Flutter version from bundle: %s", f.Config.BundleURL)
+		installTypes = []*FlutterInstallType{&manual, &primaryManager, &secondaryManager} // Manual install first, then FVM and ASDF as fallback
 	} else {
-		installTypes = []*FlutterInstallType{primaryManager, secondaryManager, &FlutterInstallTypeManual} // FVM and ASDF first, then manual install as fallback
+		installTypes = []*FlutterInstallType{&primaryManager, &secondaryManager, &manual} // FVM and ASDF first, then manual install as fallback
 	}
 
 	for _, installType := range installTypes {
-		logger.Debugf("Checking availability of Flutter install tool: %s", installType.Name)
 		if installType.CheckAvailability == nil || !installType.CheckAvailability() {
-			logger.Debugf("Flutter install tool %s is not available, skipping", installType.Name)
+			f.Debugf("Flutter install tool %s is not available, skipping", installType.Name)
 			continue
 		} else {
 			installType.IsAvailable = true
 		}
 
-		err := setDefaultIfInstalled(installType, requiredVersion)
+		err := f.setDefaultIfInstalled(installType, requiredVersion)
 		if err != nil {
-			logger.Debugf("set Flutter version with %s: %s", installType.Name, err)
-		} else if installed, _ := comapareVersionToCurrent(requiredVersion); installed {
-			logger.Infof("Flutter version %s (%s) is installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
+			f.Debugf("set Flutter version with %s: %s", installType.Name, err)
+		} else if installed, _ := f.comapareVersionToCurrent(requiredVersion); installed {
+			f.Infof("Flutter version %s (%s) is installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
 			return nil
 		}
 	}
 
-	logger.Infof("Flutter version %s (%s) is not installed, installing...", requiredVersion.version, requiredVersion.channel)
+	f.Infof("Installing Flutter version: %s channel: %s...", requiredVersion.version, requiredVersion.channel)
 	for _, installType := range installTypes {
 		if !installType.IsAvailable {
-			logger.Debugf("Flutter install tool %s is not available, skipping", installType.Name)
 			continue
 		}
 
-		err := installAndSetDefault(installType, requiredVersion, cfg)
+		err := f.installAndSetDefault(installType, requiredVersion)
 		if err != nil {
-			logger.Debugf("%s", err)
-		} else if installed, _ = comapareVersionToCurrent(requiredVersion); installed {
-			logger.Infof("Flutter version %s (%s) installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
+			f.Debugf("%s", err)
+		} else if installed, _ = f.comapareVersionToCurrent(requiredVersion); installed {
+			f.Infof("Flutter version %s (%s) installed and set as default with %s", requiredVersion.version, requiredVersion.channel, installType.Name)
 			return nil
 		}
 	}
@@ -74,8 +74,8 @@ func EnsureFlutterVersion(cfg *Config, sdkVersions *flutterproject.FlutterAndDar
 	return fmt.Errorf("flutter version %s (%s) could not be installed or set as default", requiredVersion.version, requiredVersion.channel)
 }
 
-func comapareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
-	currentVersion, _, err := flutterVersionInfo()
+func (f *FlutterInstaller) comapareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
+	currentVersion, _, err := f.flutterVersionInfo()
 	if err == nil &&
 		(required.version == "" || currentVersion.version == required.version) &&
 		(required.channel == "" || currentVersion.channel == required.channel) {
@@ -84,19 +84,19 @@ func comapareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
 	return false, currentVersion
 }
 
-func fetchFlutterVersion(cfg *Config, sdkVersions *flutterproject.FlutterAndDartSDKVersions) (flutterVersion, error) {
-	if cfg.BundleSpecified {
-		parsedVersion, err := NewFlutterVersion(strings.TrimSpace(cfg.BundleURL))
+func (f *FlutterInstaller) fetchFlutterVersion(sdkVersions *flutterproject.FlutterAndDartSDKVersions) (flutterVersion, error) {
+	if f.Config.BundleSpecified {
+		parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Config.BundleURL))
 		if err == nil {
 			return parsedVersion, nil
 		}
 	}
-	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(cfg.Version))
+	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Config.Version))
 	if err == nil {
 		return parsedVersion, nil
 	}
 
-	logger.Warnf("parse required Flutter version: %s: %w", cfg.Version, err)
+	f.Warnf("parse required Flutter version: %s: %w", f.Config.Version, err)
 
 	if sdkVersions != nil {
 		// If the version is not specified or cannot be parsed, we try to get it from the project files
@@ -128,25 +128,25 @@ func fetchFlutterVersion(cfg *Config, sdkVersions *flutterproject.FlutterAndDart
 	return flutterVersion{}, fmt.Errorf("no Flutter version specified in the configuration or project files")
 }
 
-func installAndSetDefault(installType *FlutterInstallType, version flutterVersion, cfg *Config) error {
-	logger.Debugf("Installing Flutter version %s (%s) with %s", version.version, version.channel, installType.Name)
+func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType, version flutterVersion) error {
+	f.Debugf("Installing Flutter version %s (%s) with %s", version.version, version.channel, installType.Name)
 	if installType.FullInstall != nil {
-		if err := installType.FullInstall(cfg); err != nil {
+		if err := installType.FullInstall(); err != nil {
 			return fmt.Errorf("install Flutter version (%s %s) with %s full install: %w", version.version, version.channel, installType.Name, err)
 		}
 	} else {
 		installCmd := installType.InstallCommand(version)
-		logger.Debugf("$ %s", installCmd.PrintableCommandArgs())
+		f.Debugf("$ %s", installCmd.PrintableCommandArgs())
 		if out, err := installCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return fmt.Errorf("install Flutter version (%s %s) with %s: %w, out: %s", version.version, version.channel, installType.Name, err, out)
 		}
 	}
 
-	logger.Donef("Flutter version %s %s installed successfully with %s", version.version, version.channel, installType.Name)
+	f.Donef("Flutter version %s %s installed successfully with %s", version.version, version.channel, installType.Name)
 	if installType.SetDefaultCommand != nil {
-		logger.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
+		f.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
 		setCmd := *installType.SetDefaultCommand(version)
-		logger.Debugf("$ %s", setCmd.PrintableCommandArgs)
+		f.Debugf("$ %s", setCmd.PrintableCommandArgs)
 
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set Flutter version with %s: %s", installType.Name, out)
@@ -155,19 +155,19 @@ func installAndSetDefault(installType *FlutterInstallType, version flutterVersio
 	return nil
 }
 
-func setDefaultIfInstalled(installType *FlutterInstallType, version flutterVersion) error {
+func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType, version flutterVersion) error {
 	out, err := installType.VersionsCommand.RunAndReturnTrimmedOutput()
 	if err != nil {
-		logger.Debugf("list Flutter versions with %s: %s", installType.Name, err)
+		f.Debugf("list Flutter versions with %s: %s", installType.Name, err)
 		return nil
 	}
-	logger.Debugf("Listing Flutter versions with %s: %s", installType.Name, out)
+	f.Debugf("Listing Flutter versions with %s: %s", installType.Name, out)
 
 	if strings.Contains(out, version.version) {
 		if installType.SetDefaultCommand != nil {
-			logger.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
+			f.Debugf("Setting Flutter version to %s %s with %s", version.version, version.channel, installType.Name)
 			setCmd := *installType.SetDefaultCommand(version)
-			logger.Debugf("$ %s", setCmd.PrintableCommandArgs())
+			f.Debugf("$ %s", setCmd.PrintableCommandArgs())
 
 			if err := setCmd.Run(); err != nil {
 				return fmt.Errorf("set Flutter version with %s: %w", installType.Name, err)
@@ -179,14 +179,12 @@ func setDefaultIfInstalled(installType *FlutterInstallType, version flutterVersi
 	return nil
 }
 
-func flutterVersionInfo() (flutterVersion, string, error) {
-	logger.Println()
-	versionCmd := cmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
-	logger.Donef("$ %s", versionCmd.PrintableCommandArgs())
-	logger.Println()
+func (f *FlutterInstaller) flutterVersionInfo() (flutterVersion, string, error) {
+	versionCmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
+	f.Donef("$ %s", versionCmd.PrintableCommandArgs())
 
 	out, err := versionCmd.RunAndReturnTrimmedCombinedOutput()
-	logger.Debugf("Flutter version output: %s", out)
+	f.Debugf("Flutter version output: %s", out)
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {

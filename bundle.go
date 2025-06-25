@@ -16,17 +16,17 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
-func downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
+func (f *FlutterInstaller) downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
 	if err := validateFlutterURL(bundleURL); err != nil {
 		return err
 	}
 
-	bundleTarPth, err := downloadBundle(bundleURL)
+	bundleTarPth, err := f.downloadBundle(bundleURL)
 	if err != nil {
 		return err
 	}
 
-	if err := unarchiveBundle(bundleTarPth, targetDir); err != nil {
+	if err := f.unarchiveBundle(bundleTarPth, targetDir); err != nil {
 		return err
 	}
 	return nil
@@ -69,11 +69,11 @@ func validateFlutterURL(bundleURL string) error {
 	return nil
 }
 
-func downloadBundle(bundleURL string) (string, error) {
+func (f *FlutterInstaller) downloadBundle(bundleURL string) (string, error) {
 	var resp *http.Response
 	if err := retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
 		if attempt > 0 {
-			logger.TWarnf("%d query attempt failed", attempt)
+			f.Warnf("%d query attempt failed", attempt)
 		}
 
 		var err error
@@ -102,12 +102,12 @@ func downloadBundle(bundleURL string) (string, error) {
 	}
 
 	sdkTarPth := filepath.Join(tmpDir, "flutter.tar")
-	f, err := os.Create(sdkTarPth)
+	file, err := os.Create(sdkTarPth)
 	if err != nil {
 		return "", err
 	}
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	if _, err := io.Copy(file, resp.Body); err != nil {
 		return "", err
 	}
 
@@ -118,13 +118,13 @@ func downloadBundle(bundleURL string) (string, error) {
 	return sdkTarPth, nil
 }
 
-func unarchiveBundle(tarPth, targetDir string) error {
+func (f *FlutterInstaller) unarchiveBundle(tarPth, targetDir string) error {
 	// using -J to support tar.xz
 	// --no-same-owner to NOT preserve owners (default is to preserve, if ran as user 'root'),
 	// we want to set to current user as owner to prevent error due to git configuration (https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory)
-	tarCmd := cmdFactory.Create("tar", []string{"--no-same-owner", "-xJf", tarPth, "-C", targetDir}, nil)
+	tarCmd := f.CmdFactory.Create("tar", []string{"--no-same-owner", "-xJf", tarPth, "-C", targetDir}, nil)
 
-	logger.Donef("$ %s", tarCmd.PrintableCommandArgs())
+	f.Donef("$ %s", tarCmd.PrintableCommandArgs())
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)
 	if err != nil {

@@ -18,7 +18,7 @@ var channels = []string{
 type flutterVersion struct {
 	version     string
 	channel     string
-	installType *FlutterInstallType
+	installType string
 }
 
 func NewFlutterVersion(input string) (flutterVersion, error) {
@@ -27,7 +27,7 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 		// JSON output from `flutter --version --machine`
 		version := ""
 		channel := ""
-		var installType *FlutterInstallType
+		var installType string
 		if v, ok := data["frameworkVersion"].(string); ok && v != "" {
 			version = v
 		} else if v, ok := data["flutterVersion"].(string); ok && v != "" {
@@ -40,10 +40,10 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 			return flutterVersion{}, fmt.Errorf("find flutter version and channel in JSON output")
 		}
 		if m, ok := data["flutterRoot"].(string); ok && m != "" {
-			if strings.Contains(m, FlutterInstallTypeFVM.Name) {
-				installType = &FlutterInstallTypeFVM
-			} else if strings.Contains(m, FlutterInstallTypeAsdf.Name) {
-				installType = &FlutterInstallTypeAsdf
+			if strings.Contains(m, FVMName) {
+				installType = FVMName
+			} else if strings.Contains(m, ASDFName) {
+				installType = ASDFName
 			}
 		}
 
@@ -54,10 +54,10 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 		}, nil
 	}
 
-	return newFlutterVersionFromString(input)
+	return parseVersionFromString(input)
 }
 
-func newFlutterVersionFromString(input string) (flutterVersion, error) {
+func parseVersionFromString(input string) (flutterVersion, error) {
 	versionRegexp := regexp.MustCompile(`v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`)
 	channelsString := strings.Join(channels, "|")
 	channelRegexp := regexp.MustCompile(`(?i)\b(` + channelsString + `)\b`)

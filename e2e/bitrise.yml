@@ -43,7 +43,7 @@ workflows:
         - content: |-
             #!/bin/bash
             set -ex
-            bitrise setup 
+            bitrise setup
     - path::./:
         run_if: "true"
         title: git install default

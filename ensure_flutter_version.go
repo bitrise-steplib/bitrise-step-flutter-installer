@@ -81,8 +81,9 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 
 func (f *FlutterInstaller) comapareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
 	currentVersion, _, err := f.flutterVersionInfo()
-	if err == nil &&
-		(required.version == "" || currentVersion.version == required.version) &&
+	if err != nil {
+		f.Debugf("get current Flutter version: %s", err)
+	} else if (required.version == "" || currentVersion.version == required.version) &&
 		(required.channel == "" || currentVersion.channel == required.channel) {
 		return true, currentVersion
 	}
@@ -160,6 +161,11 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 			f.Debugf("Set version with %s: %s", installType.Name, out)
 		}
 	}
+
+	if _, _, err := f.flutterVersionInfo(); err != nil {
+		f.Debugf("get flutter version: %s", err)
+	}
+
 	return nil
 }
 

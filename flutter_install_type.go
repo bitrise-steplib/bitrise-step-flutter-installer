@@ -34,12 +34,12 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			f.Debugf("fvm --version output: %s", out)
 			return err == nil
 		},
-		VersionsCommand: f.CmdFactory.Create("fvm", []string{"api", "list", "--skip-size-calculation"}, nil),
+		VersionsCommand: f.CmdFactory.Create("fvm", []string{"api", "list"}, nil),
 		InstallCommand: func(version flutterVersion) command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},
 			}
-			return f.CmdFactory.Create("fvm", []string{"install", fvmCreateVersionString(version), "--setup"}, &options)
+			return f.CmdFactory.Create("fvm", []string{"install", fvmCreateVersionString(version)}, &options)
 		},
 		SetDefaultCommand: func(version flutterVersion) *command.Command {
 			options := command.Opts{

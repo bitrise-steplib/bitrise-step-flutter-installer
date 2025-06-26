@@ -95,15 +95,14 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 
 	cmdFactory := command.NewFactory(envRepo)
 
+	if err := envRepo.Set("CI", "true"); err != nil {
+		logger.Warnf("set env: %s", err)
+	}
 	// TODO: remove this when the step is stable
 	// Test CI env var
 	cmd := cmdFactory.Create("echo", []string{"$CI"}, nil)
 	out, _ := cmd.RunAndReturnTrimmedCombinedOutput()
 	logger.Debugf("echo $CI: %s", out)
-
-	if err := envRepo.Set("CI", "true"); err != nil {
-		logger.Warnf("set env: %s", err)
-	}
 
 	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, config)
 

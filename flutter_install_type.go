@@ -28,9 +28,13 @@ type FlutterInstallType struct {
 
 func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 	return FlutterInstallType{
-		Name:              FVMName,
-		CheckAvailability: func() bool { return f.CmdFactory.Create("fvm", []string{"--version"}, nil).Run() == nil },
-		VersionsCommand:   f.CmdFactory.Create("fvm", []string{"api", "list", "--skip-size-calculation"}, nil),
+		Name: FVMName,
+		CheckAvailability: func() bool {
+			out, err := f.CmdFactory.Create("fvm", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
+			f.Debugf("fvm --version output: %s", out)
+			return err == nil
+		},
+		VersionsCommand: f.CmdFactory.Create("fvm", []string{"api", "list", "--skip-size-calculation"}, nil),
 		InstallCommand: func(version flutterVersion) command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},
@@ -63,9 +67,13 @@ func fvmCreateVersionString(version flutterVersion) string {
 
 func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 	return FlutterInstallType{
-		Name:              ASDFName,
-		CheckAvailability: func() bool { return f.CmdFactory.Create("asdf", []string{"--version"}, nil).Run() == nil },
-		VersionsCommand:   f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
+		Name: ASDFName,
+		CheckAvailability: func() bool {
+			out, err := f.CmdFactory.Create("asdf", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
+			f.Debugf("asdf --version output: %s", out)
+			return err == nil
+		},
+		VersionsCommand: f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
 		InstallCommand: func(version flutterVersion) command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},

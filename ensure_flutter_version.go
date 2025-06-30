@@ -40,11 +40,8 @@ func (f *FlutterInstaller) EnsureFlutterVersion(sdkVersions *flutterproject.Flut
 	}
 
 	for _, installType := range installTypes {
-		if installType.CheckAvailability == nil || !installType.CheckAvailability() {
-			f.Debugf("Flutter install tool %s is not available", installType.Name)
+		if !installType.IsAvailable {
 			continue
-		} else {
-			installType.IsAvailable = true
 		}
 
 		err := f.setDefaultIfInstalled(installType, requiredVersion)

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -18,56 +19,96 @@ const (
 )
 
 type FlutterInstallType struct {
-	Name              string
-	IsAvailable       bool                                          // if the tool is available, this will be set to true later
-	VersionsCommand   command.Command                               // command to list available versions installed by the tool
-	InstallCommand    func(version flutterVersion) command.Command  // function to install a specific version
-	SetDefaultCommand func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
-	FullInstall       func() error                                  // function to perform a full install, if needed
-	LegacyInstall     bool                                          // if true, the a legacy install method is used
+	Name                     string
+	IsAvailable              bool                                          // if the tool is available, this will be set to true later
+	InstalledVersionsCommand command.Command                               // command to list available versions installed by the tool
+	ReleasesCommand          command.Command                               // command to list available releases (if applicable)
+	InstallCommand           func(version flutterVersion) command.Command  // function to install a specific version
+	SetDefaultCommand        func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
+	FullInstall              func() error                                  // function to perform a full install, if needed
 }
 
 func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
-	isAvailable := false
 	versionOut, err := f.CmdFactory.Create("fvm", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
-	if err == nil {
-		isAvailable = true
-	} else {
+	if err != nil {
 		f.Warnf("fvm is not available: %s", versionOut)
+		return FlutterInstallType{
+			Name:        FVMName,
+			IsAvailable: false,
+		}
 	}
-	legacyInstall := false
-	if isAvailable {
-		matched, _ := regexp.MatchString(`^(v?[0-2])\.\d+\.\d+`, versionOut)
-		legacyInstall = matched
-		f.Debugf("fvm version: %s, legacy install: %t", versionOut, legacyInstall)
+
+	useSetupFlag, useSkipInputFlag, useAPI, err := fvmParseVersionAndFeatures(versionOut)
+	if err != nil {
+		f.Warnf("Failed to investigate FVM version: %s", err)
+	}
+	listArgs := []string{"list"}
+	if useAPI {
+		listArgs = []string{"api", "list", "--skip-size-calculation"}
 	}
 
 	return FlutterInstallType{
-		Name: FVMName,
-		IsAvailable: isAvailable,
-		LegacyInstall: legacyInstall,
-		VersionsCommand: f.CmdFactory.Create("fvm", []string{"api", "list"}, nil),
+		Name:                     FVMName,
+		IsAvailable:              true,
+		InstalledVersionsCommand: f.CmdFactory.Create("fvm", listArgs, nil),
 		InstallCommand: func(version flutterVersion) command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},
 			}
-			var cmd command.Command
-			if legacyInstall {
-				cmd = f.CmdFactory.Create("fvm", []string{"install", fvmCreateVersionString(version)}, &options)
-			} else {
-				cmd = f.CmdFactory.Create("fvm", []string{"install", fvmCreateVersionString(version), "--setup"}, &options)
+			args := []string{"install", fvmCreateVersionString(version)}
+			if useSetupFlag {
+				args = append(args, "--setup")
+			}
+			if useSkipInputFlag {
+				args = append(args, "--fvm-skip-input")
 			}
 
-			return cmd
+			return f.CmdFactory.Create("fvm", args, &options)
 		},
 		SetDefaultCommand: func(version flutterVersion) *command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},
 			}
-			cmd := f.CmdFactory.Create("fvm", []string{"global", fvmCreateVersionString(version)}, &options)
+			args := []string{"global", fvmCreateVersionString(version)}
+			if useSkipInputFlag {
+				args = append(args, "--fvm-skip-input")
+			}
+
+			cmd := f.CmdFactory.Create("fvm", args, &options)
 			return &cmd
 		},
+		ReleasesCommand: f.CmdFactory.Create("fvm", []string{"releases"}, nil),
 	}
+}
+
+func fvmParseVersionAndFeatures(versionOut string) (useSetupFlag, useSkipInputFlag, useAPIFlag bool, err error) {
+	useSetupFlag = false
+	useSkipInputFlag = false
+	regex := regexp.MustCompile(`\d+\.\d+\.\d+`)
+	versionParts := strings.Split(regex.FindString(versionOut), ".")
+	if len(versionParts) >= 3 {
+		var major, minor, patch int
+		_, majorErr := fmt.Sscan(versionParts[0], &major)
+		_, minorErr := fmt.Sscan(versionParts[1], &minor)
+		_, patchErr := fmt.Sscan(versionParts[2], &patch)
+
+		if majorErr == nil && minorErr == nil && patchErr == nil {
+			if major < 3 {
+				return
+			}
+
+			useSetupFlag = true                                                    // FVM 3.0.0 and above
+			useAPIFlag = major > 3 || minor > 0 || (minor == 1 && patch > 0)       // FVM 3.1.0 and above
+			useSkipInputFlag = major > 3 || minor > 2 || (minor == 2 && patch > 0) // FVM 3.2.1 and above
+
+			return
+		}
+		err = fmt.Errorf("failed to parse fvm version: %s: major:%w minor: %w patch: %w", versionOut, majorErr, minorErr, patchErr)
+	} else {
+		err = fmt.Errorf("failed to parse fvm version: %s", versionOut)
+	}
+
+	return
 }
 
 func fvmCreateVersionString(version flutterVersion) string {
@@ -85,18 +126,18 @@ func fvmCreateVersionString(version flutterVersion) string {
 }
 
 func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
-	isAvailable := false
 	out, err := f.CmdFactory.Create("asdf", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		f.Warnf("asdf is not available: %s", out)
-	} else {
-		isAvailable = true
+		return FlutterInstallType{
+			Name:        ASDFName,
+			IsAvailable: false,
+		}
 	}
 	return FlutterInstallType{
-		Name: ASDFName,
-		IsAvailable: isAvailable,
-		LegacyInstall: false,
-		VersionsCommand: f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
+		Name:                     ASDFName,
+		IsAvailable:              true,
+		InstalledVersionsCommand: f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
 		InstallCommand: func(version flutterVersion) command.Command {
 			options := command.Opts{
 				Env: []string{"CI=true"},
@@ -110,6 +151,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 			cmd := f.CmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, &options)
 			return &cmd
 		},
+		ReleasesCommand: f.CmdFactory.Create("asdf", []string{"list", "all", "flutter"}, nil),
 	}
 }
 
@@ -125,9 +167,9 @@ func asdfCreateVersionString(version flutterVersion) string {
 
 func (f *FlutterInstaller) NewFlutterInstallTypeManual() FlutterInstallType {
 	return FlutterInstallType{
-		Name:              ManualName,
-		IsAvailable:       true,
-		VersionsCommand:   f.CmdFactory.Create("flutter", []string{"--version"}, nil),
+		Name:                     ManualName,
+		IsAvailable:              true,
+		InstalledVersionsCommand: f.CmdFactory.Create("flutter", []string{"--version"}, nil),
 		FullInstall: func() error {
 			return f.downloadFlutterSDK()
 		},

@@ -110,6 +110,27 @@ const apiOutput = `
 }
 `
 
+const fvmReleasesOutput = `
+┌───────────────────┬──────────────┬──────────┐
+│ Version           │ Release Date │ Channel  │
+├───────────────────┼──────────────┼──────────┤
+│ v1.2.1            │ Feb 26, 2019 │ stable   │
+├───────────────────┼──────────────┼──────────┤
+│ v1.5.4-hotfix.2   │ May 7, 2019  │ stable   │
+├───────────────────┼──────────────┼──────────┤
+│ 1.22.6            │ Jan 25, 2021 │ stable   │
+├───────────────────┼──────────────┼──────────┤
+│ 3.32.5            │ Jun 25, 2025 │ stable ✓ │
+└───────────────────┴──────────────┴──────────┘
+
+Channel:
+┌─────────┬─────────┬──────────────┐
+│ Channel │ Version │ Release Date │
+├─────────┼─────────┼──────────────┤
+│ stable  │ 3.32.5  │ Jun 25, 2025 │
+└─────────┴─────────┴──────────────┘
+`
+
 const fvmListOutput = `
 Cache directory:  /Users/marcellvida/fvm/versions
 Directory Size: 2.72 GB
@@ -303,6 +324,32 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 					version:     "3.10.6",
 					channel:     "",
 					installType: FVMName,
+				},
+			},
+		},
+		{
+			name:  "list releases",
+			input: fvmReleasesOutput,
+			want: []flutterVersion{
+				{
+					version: "1.2.1",
+					channel: "stable",
+				},
+				{
+					version: "1.5.4-hotfix.2",
+					channel: "stable",
+				},
+				{
+					version: "1.22.6",
+					channel: "stable",
+				},
+				{
+					version: "3.32.5",
+					channel: "stable",
+				},
+				{
+					version: "3.32.5",
+					channel: "stable",
 				},
 			},
 		},

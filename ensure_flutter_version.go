@@ -130,16 +130,11 @@ func (f *FlutterInstaller) containsVersion(output string, required flutterVersio
 			return false, fmt.Errorf("no versions available in releases output: %s", output)
 		} else {
 			f.Debugf("Available versions: %v", versions)
-			found := false
 			for _, v := range versions {
 				if (required.version == "" || required.version == v.version) &&
 					(required.channel == "" || required.channel == v.channel) {
-					found = true
-					break
+					return true, nil
 				}
-			}
-			if !found {
-				return false, fmt.Errorf("requested version: %s channel: %s not found in releases output", required.version, required.channel)
 			}
 		}
 	}

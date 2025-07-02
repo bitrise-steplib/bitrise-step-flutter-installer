@@ -29,7 +29,9 @@ type FlutterInstallType struct {
 }
 
 func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
-	versionOut, err := f.CmdFactory.Create("fvm", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
+	cmd := f.CmdFactory.Create("fvm", []string{"--version"}, nil)
+	f.Debugf("$ %s", cmd.PrintableCommandArgs())
+	versionOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		f.Warnf("fvm is not available: %s", versionOut)
 		return FlutterInstallType{
@@ -126,8 +128,10 @@ func fvmCreateVersionString(version flutterVersion) string {
 }
 
 func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
-	out, err := f.CmdFactory.Create("asdf", []string{"--version"}, nil).RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
+	cmd := f.CmdFactory.Create("asdf", []string{"plugin-list"}, nil)
+	f.Debugf("$ %s", cmd.PrintableCommandArgs())
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil || !strings.Contains(out, "flutter") {
 		f.Warnf("asdf is not available: %s", out)
 		return FlutterInstallType{
 			Name:        ASDFName,

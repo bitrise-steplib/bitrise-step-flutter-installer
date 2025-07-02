@@ -6,18 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bitrise-io/go-flutter/flutterproject"
-	"github.com/bitrise-io/go-flutter/fluttersdk"
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/errorutil"
 	"github.com/bitrise-io/go-utils/v2/exitcode"
-	"github.com/bitrise-io/go-utils/v2/fileutil"
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-utils/v2/pathutil"
-
-	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
 func main() {
@@ -98,11 +92,6 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	if err := envRepo.Set("CI", "true"); err != nil {
 		logger.Warnf("set env: %s", err)
 	}
-	// TODO: remove this when the step is stable
-	// Test CI env var
-	cmd := cmdFactory.Create("echo", []string{"$CI"}, nil)
-	out, _ := cmd.RunAndReturnTrimmedCombinedOutput()
-	logger.Debugf("echo $CI: %s", out)
 
 	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, config)
 
@@ -111,22 +100,7 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 
 func (f *FlutterInstaller) Run() error {
 	// getting SDK versions from project files (fvm, asdf, pubspec)
-	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
-	var sdkVersions *flutterproject.FlutterAndDartSDKVersions
-	if err != nil {
-		f.Warnf("open project: %s", err)
-	} else {
-		sdkVersions, err := proj.FlutterAndDartSDKVersions()
-		if err != nil {
-			f.Warnf("read project SDK versions: %s", err)
-		} else {
-			stepTracker := tracker.NewStepTracker(logv2.NewLogger(), env.NewRepository())
-			stepTracker.LogSDKVersions(sdkVersions)
-			defer stepTracker.Wait()
-		}
-	}
-
-	if err = f.EnsureFlutterVersion(sdkVersions); err != nil {
+	if err := f.EnsureFlutterVersion(); err != nil {
 		return fmt.Errorf("ensure Flutter version: %w", err)
 	}
 

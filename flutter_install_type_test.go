@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func Test_fvmInvestigateOutput(t *testing.T) {
+func TestFVMFeatures(t *testing.T) {
 	tests := []struct {
 		name             string
 		input            string

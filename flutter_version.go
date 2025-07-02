@@ -172,6 +172,8 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 	} else if v, ok := data["flutterSdkVersion"].(string); ok && v != "" {
 		fmt.Printf("Found 'flutterSdkVersion' field in JSON object: %s\n", v)
 		version = v
+	} else if v, ok := data["frameworkVersion"].(string); ok && v != "" {
+		version = v
 	} else if t, ok := data["type"].(string); ok && t == "release" {
 		if n, ok := data["name"].(string); ok && n != "" {
 			version = n

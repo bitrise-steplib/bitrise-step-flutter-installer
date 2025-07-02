@@ -20,6 +20,18 @@ const versionMachineOut = `
 }
 `
 
+const versionIncompleteMachineOut = `
+{
+  "frameworkVersion": "1.6.3",
+  "channel": "beta",
+  "repositoryUrl": "https://github.com/flutter/flutter.git",
+  "frameworkRevision": "bc7bc940836f1f834699625426795fd6f07c18ec",
+  "frameworkCommitDate": "2019-05-23 10:29:07 -0700",
+  "engineRevision": "8dc3a4cde2075a4f5458fd0eb199627f5124508d",
+  "dartSdkVersion": "2.3.2 (build 2.3.2-dev.0.0 e3edfd36b2)"
+}
+`
+
 const apiOutput = `
 {
   "size": "2.58 GB",
@@ -156,6 +168,11 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 			name:  "normal case",
 			input: versionMachineOut,
 			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: FVMName},
+		},
+		{
+			name:  "incomplete version",
+			input: versionIncompleteMachineOut,
+			want:  flutterVersion{version: "1.6.3", channel: "beta"},
 		},
 		{
 			name:  "build flutter",

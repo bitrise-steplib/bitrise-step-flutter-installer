@@ -1,3 +1,4 @@
+---
 format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
@@ -101,7 +102,7 @@ workflows:
         run_if: "true"
         title: install version from dev channel
         inputs:
-        - version:  2.11.0-0.1.pre dev
+        - version: 2.11.0-0.1.pre dev
         - is_debug: "true"
 
   test_clean_install_version_with_channel:

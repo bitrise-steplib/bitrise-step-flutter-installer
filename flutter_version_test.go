@@ -32,7 +32,7 @@ const versionIncompleteMachineOut = `
 }
 `
 
-const apiOutput = `
+const fvmApiListOutput = `
 {
   "size": "2.58 GB",
   "versions": [
@@ -132,7 +132,7 @@ Channel:
 `
 
 const fvmListOutput = `
-Cache directory:  /Users/marcellvida/fvm/versions
+Cache directory:  /Users/vagrant/fvm/versions
 Directory Size: 2.72 GB
 
 ┌────────────────┬─────────┬─────────────────┬──────────────────┬──────────────┬────────┬───────┐
@@ -217,6 +217,11 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta"},
 		},
 		{
+			name:  "valid channel and version",
+			input: "dev 3.33.0-0.2.pre",
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "dev"},
+		},
+		{
 			name:  "valid version and channel (different order)",
 			input: "beta 3.33.0-0.2.pre",
 			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta"},
@@ -267,7 +272,7 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 
 		{
 			name:  "api list output with multiple versions",
-			input: apiOutput,
+			input: fvmApiListOutput,
 			want: []flutterVersion{
 				{
 					version:     "3.32.5",

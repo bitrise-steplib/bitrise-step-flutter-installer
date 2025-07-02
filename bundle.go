@@ -4,16 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
 
 func (f *FlutterInstaller) downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
@@ -70,31 +68,15 @@ func validateFlutterURL(bundleURL string) error {
 }
 
 func (f *FlutterInstaller) downloadBundle(bundleURL string) (string, error) {
-	var resp *http.Response
-	if err := retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
-		if attempt > 0 {
-			f.Warnf("%d query attempt failed", attempt)
-		}
-
-		var err error
-		resp, err = http.Get(bundleURL)
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return err
-			}
-
-			return fmt.Errorf("query failed, status code: %d, response body: %s", resp.StatusCode, body)
-		}
-
-		return nil
-	}); err != nil {
+	resp, err := retryhttp.NewClient(f.Logger).Get(bundleURL)
+	if err != nil {
 		return "", err
 	}
+	defer func(body io.ReadCloser) {
+		if err := resp.Body.Close(); err != nil {
+			f.Debugf("Failed to close response body: %s", err)
+		}
+	}(resp.Body)
 
 	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("__flutter-sdk__")
 	if err != nil {
@@ -106,6 +88,11 @@ func (f *FlutterInstaller) downloadBundle(bundleURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer func(file *os.File) {
+		if err := file.Close(); err != nil {
+			f.Debugf("Failed to close file: %s", err)
+		}
+	}(file)
 
 	if _, err := io.Copy(file, resp.Body); err != nil {
 		return "", err

@@ -2,55 +2,41 @@ format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  test_fix_version:
+  test_preinstalled_version:
     after_run:
     - _test_flutter_installation
     steps:
-    - script:
-        title: bitrise setup
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            bitrise setup
     - path::./:
         run_if: "true"
-        title: test fixed version
+        title: test preinstalled version
         inputs:
         - is_debug: "true"
         - version: 3.16.8
 
-  test_fix_version2:
+  test_preinstalled_version2:
     after_run:
     - _test_flutter_installation
     steps:
     - path::./:
         run_if: "true"
-        title: test fixed version 2
+        title: test preinstalled version 2
         inputs:
         - is_debug: "true"
         - version: 3.22.0
 
-  test_git_default:
+  test_clean_install_no_version_input:
     before_run:
     - _remove_flutter
     after_run:
     - _test_flutter_installation
     steps:
-    - script:
-        title: bitrise setup
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-            bitrise setup
     - path::./:
         run_if: "true"
-        title: git install default
+        title: test install with no input
         inputs:
         - is_debug: "true"
 
-  test_git_default_force_update:
+  test_clean_install_stable:
     before_run:
     - _remove_flutter
     after_run:
@@ -58,12 +44,25 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: git install stable force update
+        title: test install stable version
         inputs:
         - version: stable
         - is_debug: "true"
 
-  test_bundle:
+  test_clean_install_specific_version:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: install specific version
+        inputs:
+        - version: 3.32.5
+        - is_debug: "true"
+
+  test_clean_install_bundle:
     before_run:
     - _remove_flutter
     after_run:
@@ -92,7 +91,7 @@ workflows:
             is_expand: true
         - is_debug: "true"
 
-  test_git_branch:
+  test_clean_install_dev:
     before_run:
     - _remove_flutter
     after_run:
@@ -100,12 +99,25 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: git install dev
+        title: install version from dev channel
+        inputs:
+        - version:  2.11.0-0.1.pre dev
+        - is_debug: "true"
+
+  test_clean_install_version_with_channel:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: install specific version with channel
         inputs:
         - version: dev
         - is_debug: "true"
 
-  test_git_tag:
+  test_clean_install_legacy_version:
     before_run:
     - _remove_flutter
     after_run:
@@ -113,7 +125,7 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: git install specific version
+        title: install legacy version
         inputs:
         - version: v1.7.1
         - is_debug: "true"

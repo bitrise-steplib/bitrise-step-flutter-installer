@@ -32,14 +32,11 @@ type flutterVersion struct {
 }
 
 func NewFlutterVersion(input string) (flutterVersion, error) {
-	fmt.Println("Parsing Flutter version from input:", input)
 	if versions, err := parseVersionsFromJson(input, true); err == nil && len(versions) > 0 {
-		fmt.Printf("Parsed version from JSON: %v\n", versions[0])
 		return versions[0], nil
 	}
 
 	if versions, err := parseVersionFromStringLines(input, true); err == nil && len(versions) > 0 {
-		fmt.Printf("Parsed version from string lines: %v\n", versions[0])
 		return versions[0], nil
 	}
 
@@ -85,6 +82,7 @@ func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() (flutterVersio
 			return parsedVersion, nil
 		}
 	}
+
 	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Config.Version))
 	if err != nil {
 		f.Debugf("parse version from input: %w", err)
@@ -118,44 +116,36 @@ func parseVersionsFromJson(input string, singleResult bool) ([]flutterVersion, e
 	var obj map[string]any
 	if err := json.Unmarshal([]byte(input), &obj); err == nil {
 		if versionsRaw, ok := obj["versions"]; ok {
+			// fvm API returns versions as an array
 			if versionsArr, ok := versionsRaw.([]any); ok {
 				var versions []flutterVersion
 				for _, v := range versionsArr {
-					println("Processing version item in 'versions' array")
-					fmt.Printf("Item type: %T\n, raw: %s", v, v)
 					if data, ok := v.(map[string]any); ok {
 						fv, err := parseVersionFromJsonMap(data)
-						if err != nil {
-							fmt.Printf("Error parsing version from item: %s\n", err)
-						} else {
+						if err == nil {
 							if fv.installType == "" && defaultManager != "" {
 								fv.installType = defaultManager
 							}
 							versions = append(versions, fv)
 							if singleResult {
-								fmt.Printf("Parsed single version from 'versions' array: %s, channel: %s\n", fv.version, fv.channel)
 								return versions, nil
 							}
 						}
 					}
 				}
 				if len(versions) > 0 {
-					fmt.Printf("Parsed %d versions from 'versions' array\n", len(versions))
 					return versions, nil
 				}
 			}
 		}
 
-		fmt.Printf("Input is a JSON object, trying to parse single version\n")
 		fv, err := parseVersionFromJsonMap(obj)
-		fmt.Printf("Parse single version from JSON object: %v\n", fv)
 		if err != nil {
 			return nil, fmt.Errorf("parse single version from JSON object: %w", err)
 		} else {
 			if fv.installType == "" && defaultManager != "" {
 				fv.installType = defaultManager
 			}
-			fmt.Printf("Parsed single version: %s, channel: %s, setting installType to default manager: %s\n", fv.version, fv.channel, defaultManager)
 			fv.installType = defaultManager
 			return []flutterVersion{fv}, nil
 		}
@@ -165,12 +155,10 @@ func parseVersionsFromJson(input string, singleResult bool) ([]flutterVersion, e
 }
 
 func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
-	fmt.Printf("Parsing version from JSON object: %v\n", data)
 	version := ""
 	if v, ok := data["flutterVersion"].(string); ok && v != "" {
 		version = v
 	} else if v, ok := data["flutterSdkVersion"].(string); ok && v != "" {
-		fmt.Printf("Found 'flutterSdkVersion' field in JSON object: %s\n", v)
 		version = v
 	} else if v, ok := data["frameworkVersion"].(string); ok && v != "" {
 		version = v
@@ -209,7 +197,6 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 		}
 	}
 
-	fmt.Printf("Parsed: version: %s, channel: %s, installType: %s\n", version, channel, installType)
 	return flutterVersion{
 		version:     version,
 		channel:     channel,

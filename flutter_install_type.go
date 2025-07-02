@@ -22,8 +22,8 @@ type FlutterInstallType struct {
 	Name                     string
 	IsAvailable              bool                                          // if the tool is available, this will be set to true later
 	InstalledVersionsCommand command.Command                               // command to list available versions installed by the tool
-	ReleasesCommand          command.Command                               // command to list available releases (if applicable)
-	InstallCommand           func(version flutterVersion) command.Command  // function to install a specific version
+	ReleasesCommand          func(version flutterVersion) *command.Command // command to list available releases (if applicable)
+	InstallCommand           func(version flutterVersion) *command.Command // function to install a specific version
 	SetDefaultCommand        func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
 	FullInstall              func() error                                  // function to perform a full install, if needed
 }
@@ -49,37 +49,39 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 		listArgs = []string{"api", "list", "--skip-size-calculation"}
 	}
 
+	defaultArgs := []string{}
+	if useSkipInputFlag {
+		defaultArgs = append(defaultArgs, "--fvm-skip-input")
+	}
+
 	return FlutterInstallType{
 		Name:                     FVMName,
 		IsAvailable:              true,
 		InstalledVersionsCommand: f.CmdFactory.Create("fvm", listArgs, nil),
-		InstallCommand: func(version flutterVersion) command.Command {
-			options := command.Opts{
-				Env: []string{"CI=true"},
-			}
-			args := []string{"install", fvmCreateVersionString(version)}
+		InstallCommand: func(version flutterVersion) *command.Command {
+			args := append([]string{"install", fvmCreateVersionString(version)}, defaultArgs...)
 			if useSetupFlag {
 				args = append(args, "--setup")
 			}
-			if useSkipInputFlag {
-				args = append(args, "--fvm-skip-input")
-			}
 
-			return f.CmdFactory.Create("fvm", args, &options)
-		},
-		SetDefaultCommand: func(version flutterVersion) *command.Command {
-			options := command.Opts{
-				Env: []string{"CI=true"},
-			}
-			args := []string{"global", fvmCreateVersionString(version)}
-			if useSkipInputFlag {
-				args = append(args, "--fvm-skip-input")
-			}
-
-			cmd := f.CmdFactory.Create("fvm", args, &options)
+			cmd := f.CmdFactory.Create("fvm", args, nil)
 			return &cmd
 		},
-		ReleasesCommand: f.CmdFactory.Create("fvm", []string{"releases"}, nil),
+		SetDefaultCommand: func(version flutterVersion) *command.Command {
+			args := append([]string{"global", fvmCreateVersionString(version)}, defaultArgs...)
+
+			cmd := f.CmdFactory.Create("fvm", args, nil)
+			return &cmd
+		},
+		ReleasesCommand: func(version flutterVersion) *command.Command {
+			args := append([]string{"releases"}, defaultArgs...)
+			if version.channel != "stable" && version.channel != "" {
+				args = append(args, "--channel", version.channel)
+			}
+
+			cmd := f.CmdFactory.Create("fvm", args, nil)
+			return &cmd
+		},
 	}
 }
 
@@ -138,24 +140,23 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 			IsAvailable: false,
 		}
 	}
+
 	return FlutterInstallType{
 		Name:                     ASDFName,
 		IsAvailable:              true,
 		InstalledVersionsCommand: f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
-		InstallCommand: func(version flutterVersion) command.Command {
-			options := command.Opts{
-				Env: []string{"CI=true"},
-			}
-			return f.CmdFactory.Create("asdf", []string{"install", "flutter", asdfCreateVersionString(version)}, &options)
-		},
-		SetDefaultCommand: func(version flutterVersion) *command.Command {
-			options := command.Opts{
-				Env: []string{"CI=true"},
-			}
-			cmd := f.CmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, &options)
+		InstallCommand: func(version flutterVersion) *command.Command {
+			cmd := f.CmdFactory.Create("asdf", []string{"install", "flutter", asdfCreateVersionString(version)}, nil)
 			return &cmd
 		},
-		ReleasesCommand: f.CmdFactory.Create("asdf", []string{"list", "all", "flutter"}, nil),
+		SetDefaultCommand: func(version flutterVersion) *command.Command {
+			cmd := f.CmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, nil)
+			return &cmd
+		},
+		ReleasesCommand: func(version flutterVersion) *command.Command {
+			cmd := f.CmdFactory.Create("asdf", []string{"list", "all", "flutter"}, nil)
+			return &cmd
+		},
 	}
 }
 

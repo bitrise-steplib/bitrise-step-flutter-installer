@@ -87,11 +87,11 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 
 	config := Config{Input: input, BundleSpecified: bundleSpecified}
 
-	cmdFactory := command.NewFactory(envRepo)
-
 	if err := envRepo.Set("CI", "true"); err != nil {
 		logger.Warnf("set env: %s", err)
 	}
+
+	cmdFactory := command.NewFactory(envRepo)
 
 	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, config)
 

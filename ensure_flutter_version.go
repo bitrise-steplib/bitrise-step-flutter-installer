@@ -129,6 +129,17 @@ func (f *FlutterInstaller) containsVersion(output string, required flutterVersio
 	return false, fmt.Errorf("output is empty or doesnt contain version")
 }
 
+func (f *FlutterInstaller) ensureSetupFinished() error {
+	finsihSetupCmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
+	f.Donef("$ %s", finsihSetupCmd.PrintableCommandArgs())
+	if out, err := finsihSetupCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		return fmt.Errorf("check flutter version after install: %s", out)
+	} else {
+		f.Debugf("Flutter version output after install: %s", out)
+	}
+	return nil
+}
+
 func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType, required flutterVersion) error {
 	if installType.Install == nil {
 		return fmt.Errorf("no install command defined")
@@ -146,14 +157,8 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 
 	if err := installType.Install(required); err != nil {
 		return fmt.Errorf("install: %s", err)
-	} else {
-		finsihSetupCmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
-		f.Donef("$ %s", finsihSetupCmd.PrintableCommandArgs())
-		if out, err := finsihSetupCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			return fmt.Errorf("check flutter version after install: %s", out)
-		} else {
-			f.Debugf("Flutter version output after install: %s", out)
-		}
+	} else if err := f.ensureSetupFinished(); err != nil {
+		return fmt.Errorf("ensure setup finished: %w", err)
 	}
 
 	if installType.SetDefaultCommand != nil {
@@ -188,10 +193,14 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 		return fmt.Errorf("version: %s channel: %s is not available with %s", required.version, required.channel, installType.Name)
 	}
 
-	setCmd := *installType.SetDefaultCommand(required)
-	f.Donef("$ %s", setCmd.PrintableCommandArgs())
-	if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
-		return fmt.Errorf("set version default: %s", out)
+	if installType.SetDefaultCommand != nil {
+		setCmd := *installType.SetDefaultCommand(required)
+		f.Donef("$ %s", setCmd.PrintableCommandArgs())
+		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
+			return fmt.Errorf("set version default: %s", out)
+		} else if err := f.ensureSetupFinished(); err != nil {
+			return fmt.Errorf("ensure setup finished: %w", err)
+		}
 	}
 
 	if installed, _ := f.compareVersionToCurrent(required); installed {

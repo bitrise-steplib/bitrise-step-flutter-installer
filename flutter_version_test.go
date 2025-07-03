@@ -20,7 +20,7 @@ const versionMachineOut = `
 }
 `
 
-const versionIncompleteMachineOut = `
+const versionMachineOutIncomplete = `
 {
   "frameworkVersion": "1.6.3",
   "channel": "beta",
@@ -29,6 +29,20 @@ const versionIncompleteMachineOut = `
   "frameworkCommitDate": "2019-05-23 10:29:07 -0700",
   "engineRevision": "8dc3a4cde2075a4f5458fd0eb199627f5124508d",
   "dartSdkVersion": "2.3.2 (build 2.3.2-dev.0.0 e3edfd36b2)"
+}
+`
+
+const versionMachineOutUnknownChannel = `
+{
+  "frameworkVersion": "2.11.0-0.1.pre",
+  "channel": "unknown",
+  "repositoryUrl": "unknown source",
+  "frameworkRevision": "b101bfe32f634566e7cb2791a9efe19cf8828b15",
+  "frameworkCommitDate": "2022-02-16 07:36:54 -0800",
+  "engineRevision": "e3559935720ea88dfcdf9079c394ffdb5146ceab",
+  "dartSdkVersion": "2.17.0 (build 2.17.0-69.2.beta)",
+  "devToolsVersion": "2.10.0-dev.1",
+  "flutterRoot": "/Users/vagrant/flutter-sdk/flutter"
 }
 `
 
@@ -210,8 +224,13 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 		},
 		{
 			name:  "incomplete version",
-			input: versionIncompleteMachineOut,
+			input: versionMachineOutIncomplete,
 			want:  flutterVersion{version: "1.6.3", channel: "beta"},
+		},
+		{
+			name:  "unknown channel",
+			input: versionMachineOutUnknownChannel,
+			want:  flutterVersion{version: "2.11.0-0.1.pre"},
 		},
 		{
 			name:  "build flutter",

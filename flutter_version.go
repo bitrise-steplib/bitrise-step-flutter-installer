@@ -162,9 +162,9 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 	}
 
 	channel := ""
-	if c, ok := data["channel"].(string); ok && c != "" {
+	if c, ok := data["channel"].(string); ok && c != "" && containsString(channels, c) {
 		channel = c
-	} else if c, ok := data["releaseFromChannel"].(string); ok && c != "" {
+	} else if c, ok := data["releaseFromChannel"].(string); ok && c != "" && containsString(channels, c) {
 		channel = c
 	} else if t, ok := data["type"].(string); ok && t == "channel" {
 		if n, ok := data["name"].(string); ok && n != "" && containsString(channels, n) {

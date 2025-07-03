@@ -116,7 +116,6 @@ func (f *FlutterInstaller) containsVersion(output string, required flutterVersio
 		} else if len(versions) == 0 {
 			return false, fmt.Errorf("no versions available in releases output: %s", output)
 		} else {
-			f.Debugf("Available versions: %v\nfrom: %s", versions, output)
 			for _, v := range versions {
 				if (required.version == "" || required.version == v.version) &&
 					(required.channel == "" || required.channel == v.channel) {
@@ -166,8 +165,8 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 		f.Donef("$ %s", setCmd.PrintableCommandArgs())
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set version default: %s", out)
-		} else {
-			f.Debugf("Set default version: %s", out)
+		} else if err := f.ensureSetupFinished(); err != nil {
+			return fmt.Errorf("ensure setup finished: %w", err)
 		}
 	}
 

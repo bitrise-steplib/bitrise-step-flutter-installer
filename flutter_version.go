@@ -205,6 +205,7 @@ func containsString(slice []string, str string) bool {
 	}
 	return false
 }
+
 func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVersion, error) {
 	versionRegexp := regexp.MustCompile(`v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`)
 	channelsString := strings.Join(channels, "|")
@@ -225,7 +226,7 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 			continue
 		}
 
-		currentVersion := versionRegexp.FindString(line)
+		currentVersion := versionRegexp.FindString(lowerLine)
 		if currentVersion != "" {
 			for _, channel := range channels {
 				suffix := fmt.Sprintf("-%s", channel)
@@ -235,7 +236,7 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 			}
 		}
 
-		currentChannel := channelRegexp.FindString(line)
+		currentChannel := channelRegexp.FindString(lowerLine)
 
 		if currentVersion != "" || currentChannel != "" {
 			versions = append(versions, flutterVersion{
@@ -244,7 +245,7 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 				installType: defaultManager,
 			})
 			if singleResult {
-				break
+				return versions, nil
 			}
 		}
 	}

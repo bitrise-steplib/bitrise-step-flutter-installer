@@ -67,7 +67,9 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			cmd := f.CmdFactory.Create("fvm", args, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-				return fmt.Errorf("install: %s", out)
+				return fmt.Errorf("install: %s %s", err, out)
+			} else {
+				f.Debugf("Installed Flutter: %s", out)
 			}
 			return nil
 		},
@@ -75,6 +77,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			args := append([]string{"global", fvmCreateVersionString(version)}, defaultArgs...)
 
 			cmd := f.CmdFactory.Create("fvm", args, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			return &cmd
 		},
 		ReleasesCommand: func(version flutterVersion) *command.Command {
@@ -84,6 +87,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			}
 
 			cmd := f.CmdFactory.Create("fvm", args, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			return &cmd
 		},
 	}
@@ -157,7 +161,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 			cmd := f.CmdFactory.Create("asdf", []string{"install", "flutter", asdfCreateVersionString(version)}, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-				return fmt.Errorf("install: %s", out)
+				return fmt.Errorf("install: %s %s", err, out)
 			} else {
 				f.Debugf("Installed Flutter: %s", out)
 			}
@@ -165,10 +169,12 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 		},
 		SetDefaultCommand: func(version flutterVersion) *command.Command {
 			cmd := f.CmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			return &cmd
 		},
 		ReleasesCommand: func(version flutterVersion) *command.Command {
 			cmd := f.CmdFactory.Create("asdf", []string{"list", "all", "flutter"}, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			return &cmd
 		},
 	}

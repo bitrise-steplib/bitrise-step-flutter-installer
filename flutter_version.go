@@ -55,16 +55,16 @@ func NewFlutterVersions(input string) ([]flutterVersion, error) {
 	return []flutterVersion{}, fmt.Errorf("parse flutter version and channel from input: %s", input)
 }
 
-func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, string, error) {
+func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, error) {
 	versionCmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
 	f.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	out, err := versionCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
-			return flutterVersion{}, out, fmt.Errorf("get flutter version: %s, out: %s", err, out)
+			return flutterVersion{}, fmt.Errorf("get flutter version: %s %s", err, out)
 		}
-		return flutterVersion{}, "", fmt.Errorf("get flutter version: %w", err)
+		return flutterVersion{}, fmt.Errorf("get flutter version: %s", err)
 	} else {
 		f.Debugf("Flutter version output: %s", out)
 	}
@@ -72,7 +72,7 @@ func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, strin
 	flutterVer, err := NewFlutterVersion(out)
 	f.Debugf("Current Flutter version: %s, channel: %s", flutterVer.version, flutterVer.channel)
 
-	return flutterVer, out, err
+	return flutterVer, err
 }
 
 func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() (flutterVersion, error) {

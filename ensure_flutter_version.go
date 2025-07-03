@@ -59,7 +59,7 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 }
 
 func (f *FlutterInstaller) compareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
-	currentVersion, _, err := f.NewFlutterVersionFromCurrent()
+	currentVersion, err := f.NewFlutterVersionFromCurrent()
 	if err != nil {
 		f.Debugf("get current Flutter version: %s", err)
 	} else if (required.version == "" || currentVersion.version == required.version) &&
@@ -70,10 +70,8 @@ func (f *FlutterInstaller) compareVersionToCurrent(required flutterVersion) (boo
 }
 
 func (f *FlutterInstaller) hasRelease(installType *FlutterInstallType, required flutterVersion) (bool, error) {
-	f.Debugf("Checking if version: %s channel: %s is available with %s", required.version, required.channel, installType.Name)
 	if installType.ReleasesCommand != nil {
 		releasesCmd := *installType.ReleasesCommand(required)
-		f.Donef("$ %s", releasesCmd.PrintableCommandArgs())
 		if out, err := releasesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return false, fmt.Errorf("list releases: %s", out)
 		} else if contains, err := f.containsVersion(out, required); err != nil {
@@ -89,10 +87,8 @@ func (f *FlutterInstaller) hasRelease(installType *FlutterInstallType, required 
 	return false, fmt.Errorf("no releases command defined for %s", installType.Name)
 }
 func (f *FlutterInstaller) hasInstalled(installType *FlutterInstallType, required flutterVersion) (bool, error) {
-	f.Debugf("Checking if version: %s channel: %s is available with %s", required.version, required.channel, installType.Name)
 	if installType.InstalledVersionsCommand != nil {
 		installsCmd := *installType.InstalledVersionsCommand()
-		f.Donef("$ %s", installsCmd.PrintableCommandArgs())
 		if out, err := installsCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return false, fmt.Errorf("list instances: %s", out)
 		} else if contains, err := f.containsVersion(out, required); err != nil {
@@ -129,10 +125,10 @@ func (f *FlutterInstaller) containsVersion(output string, required flutterVersio
 }
 
 func (f *FlutterInstaller) ensureSetupFinished() error {
-	finsihSetupCmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
+	finsihSetupCmd := f.CmdFactory.Create("flutter", []string{"--version"}, nil)
 	f.Donef("$ %s", finsihSetupCmd.PrintableCommandArgs())
 	if out, err := finsihSetupCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		return fmt.Errorf("check flutter version after install: %s", out)
+		return fmt.Errorf("check flutter version after setup: %s %s", err, out)
 	} else {
 		f.Debugf("Flutter version output after install: %s", out)
 	}
@@ -162,7 +158,6 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 
 	if installType.SetDefaultCommand != nil {
 		setCmd := *installType.SetDefaultCommand(required)
-		f.Donef("$ %s", setCmd.PrintableCommandArgs())
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set version default: %s", out)
 		} else if err := f.ensureSetupFinished(); err != nil {
@@ -194,7 +189,6 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 
 	if installType.SetDefaultCommand != nil {
 		setCmd := *installType.SetDefaultCommand(required)
-		f.Donef("$ %s", setCmd.PrintableCommandArgs())
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set version default: %s", out)
 		} else if err := f.ensureSetupFinished(); err != nil {

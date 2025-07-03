@@ -17,7 +17,7 @@ const (
 type FlutterInstallType struct {
 	Name                     string
 	IsAvailable              bool                                          // if the tool is available, this will be set to true later
-	InstalledVersionsCommand command.Command                               // command to list available versions installed by the tool
+	InstalledVersionsCommand func() *command.Command                       // command to list available versions installed by the tool
 	ReleasesCommand          func(version flutterVersion) *command.Command // command to list available releases (if applicable)
 	Install                  func(version flutterVersion) error            // function to install a specific version
 	SetDefaultCommand        func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
@@ -51,9 +51,13 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 	}
 
 	return FlutterInstallType{
-		Name:                     FVMName,
-		IsAvailable:              true,
-		InstalledVersionsCommand: f.CmdFactory.Create("fvm", listArgs, nil),
+		Name:        FVMName,
+		IsAvailable: true,
+		InstalledVersionsCommand: func() *command.Command {
+			cmd := f.CmdFactory.Create("fvm", listArgs, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
+			return &cmd
+		},
 		Install: func(version flutterVersion) error {
 			args := append([]string{"install", fvmCreateVersionString(version)}, defaultArgs...)
 			if useSetupFlag {
@@ -142,14 +146,20 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 	}
 
 	return FlutterInstallType{
-		Name:                     ASDFName,
-		IsAvailable:              true,
-		InstalledVersionsCommand: f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil),
+		Name:        ASDFName,
+		IsAvailable: true,
+		InstalledVersionsCommand: func() *command.Command {
+			cmd := f.CmdFactory.Create("asdf", []string{"list", "flutter"}, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
+			return &cmd
+		},
 		Install: func(version flutterVersion) error {
 			cmd := f.CmdFactory.Create("asdf", []string{"install", "flutter", asdfCreateVersionString(version)}, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 				return fmt.Errorf("install: %s", out)
+			} else {
+				f.Debugf("Installed Flutter: %s", out)
 			}
 			return nil
 		},
@@ -176,9 +186,12 @@ func asdfCreateVersionString(version flutterVersion) string {
 
 func (f *FlutterInstaller) NewFlutterInstallTypeManual() FlutterInstallType {
 	return FlutterInstallType{
-		Name:                     ManualName,
-		IsAvailable:              true,
-		InstalledVersionsCommand: f.CmdFactory.Create("flutter", []string{"--version"}, nil),
+		Name:        ManualName,
+		IsAvailable: true,
+		InstalledVersionsCommand: func() *command.Command {
+			cmd := f.CmdFactory.Create("flutter", []string{"--version", "--machine"}, nil)
+			return &cmd
+		},
 		Install: func(version flutterVersion) error {
 			return f.DownloadFlutterSDK()
 		},

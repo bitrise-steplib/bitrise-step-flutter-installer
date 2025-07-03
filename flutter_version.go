@@ -65,6 +65,8 @@ func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, strin
 			return flutterVersion{}, out, fmt.Errorf("get flutter version: %s, out: %s", err, out)
 		}
 		return flutterVersion{}, "", fmt.Errorf("get flutter version: %w", err)
+	} else {
+		f.Debugf("Flutter version output: %s", out)
 	}
 
 	flutterVer, err := NewFlutterVersion(out)

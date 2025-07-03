@@ -209,7 +209,7 @@ func containsString(slice []string, str string) bool {
 func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVersion, error) {
 	versionRegexp := regexp.MustCompile(`v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`)
 	channelsString := strings.Join(channels, "|")
-	channelRegexp := regexp.MustCompile(`(?i)\b(` + channelsString + `)\b`)
+	channelRegexp := regexp.MustCompile(`(?i)(` + channelsString + `)\b`)
 
 	defaultManager := ""
 	if strings.Contains(input, FVMName) {

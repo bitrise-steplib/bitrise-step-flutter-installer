@@ -131,6 +131,24 @@ Channel:
 └─────────┴─────────┴──────────────┘
 `
 
+const fvmReleasesOutputDevChannel = `
+┌─────────────────┬──────────────┬─────────┐
+│ Version         │ Release Date │ Channel │
+├─────────────────┼──────────────┼─────────┤
+│ v0.1.6          │ Feb 26, 2018 │ dev     │
+├─────────────────┼──────────────┼─────────┤
+│ v1.4.6-hotfix.1 │ Mar 29, 2019 │ dev     │
+├─────────────────┼──────────────┼─────────┤
+│ 2.11.0-0.1.pre  │ Feb 16, 2022 │ dev     │
+└─────────────────┴──────────────┴─────────┘
+
+Channel:
+┌─────────┬─────────┬──────────────┐
+│ Channel │ Version │ Release Date │
+├─────────┼─────────┼──────────────┤
+└─────────┴─────────┴──────────────┘
+`
+
 const fvmListOutput = `
 Cache directory:  /Users/vagrant/fvm/versions
 Directory Size: 2.72 GB
@@ -209,7 +227,7 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 		{
 			name:  "bundle URL",
 			input: bundleURL,
-			want:  flutterVersion{version: "1.6.3", channel: "beta"},
+			want:  flutterVersion{version: "v1.6.3", channel: "beta"},
 		},
 		{
 			name:  "valid version and channel",
@@ -337,11 +355,11 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 			input: fvmReleasesOutput,
 			want: []flutterVersion{
 				{
-					version: "1.2.1",
+					version: "v1.2.1",
 					channel: "stable",
 				},
 				{
-					version: "1.5.4-hotfix.2",
+					version: "v1.5.4-hotfix.2",
 					channel: "stable",
 				},
 				{
@@ -355,6 +373,24 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 				{
 					version: "3.32.5",
 					channel: "stable",
+				},
+			},
+		},
+		{
+			name:  "dev channel relases",
+			input: fvmReleasesOutputDevChannel,
+			want: []flutterVersion{
+				{
+					version: "v0.1.6",
+					channel: "dev",
+				},
+				{
+					version: "v1.4.6-hotfix.1",
+					channel: "dev",
+				},
+				{
+					version: "2.11.0-0.1.pre",
+					channel: "dev",
 				},
 			},
 		},

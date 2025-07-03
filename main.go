@@ -1,10 +1,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -22,15 +20,15 @@ type FlutterInstaller struct {
 	logv2.Logger
 	EnvRepo    env.Repository
 	CmdFactory command.Factory
-	Config     Config
+	Input      Input
 }
 
-func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, config Config) FlutterInstaller {
+func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, Input Input) FlutterInstaller {
 	return FlutterInstaller{
 		Logger:     logger,
 		EnvRepo:    envRepo,
 		CmdFactory: cmdFactory,
-		Config:     config,
+		Input:      Input,
 	}
 }
 
@@ -50,14 +48,8 @@ func run() exitcode.ExitCode {
 }
 
 type Input struct {
-	Version   string `env:"version"`
-	BundleURL string `env:"installation_bundle_url"`
-	IsDebug   bool   `env:"is_debug,required"`
-}
-
-type Config struct {
-	Input
-	BundleSpecified bool
+	Version string `env:"version"`
+	IsDebug bool   `env:"is_debug"`
 }
 
 func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
@@ -72,28 +64,18 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	logger := logv2.NewLogger()
 	logger.EnableDebugLog(input.IsDebug)
 
-	bundleSpecified := strings.TrimSpace(input.BundleURL) != ""
-	gitBranchSpecified := strings.TrimSpace(input.Version) != ""
-	if !bundleSpecified && !gitBranchSpecified {
-		return &FlutterInstaller{}, errors.New(`one of the following inputs needs to be specified:
-	"Flutter SDK git repository version" (version)
-	"Flutter SDK installation bundle URL" (installation_bundle_url)`)
+	if input.Version == "" {
+		logger.Warnf("Input: 'Flutter SDK git repository version' (version) is not specified, using 'stable' as a default version.")
+		input.Version = "stable"
 	}
-
-	if bundleSpecified && gitBranchSpecified {
-		logger.Warnf("Input: 'Flutter SDK git repository version' (version) is ignored, " +
-			"using 'Flutter SDK installation bundle URL' (installation_bundle_url).")
-	}
-
-	config := Config{Input: input, BundleSpecified: bundleSpecified}
 
 	if err := envRepo.Set("CI", "true"); err != nil {
-		logger.Warnf("set env: %s", err)
+		logger.Debugf("Set env 'CI': %s", err)
 	}
 
 	cmdFactory := command.NewFactory(envRepo)
 
-	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, config)
+	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, input)
 
 	return &fi, nil
 }
@@ -104,7 +86,7 @@ func (f *FlutterInstaller) Run() error {
 		return fmt.Errorf("ensure Flutter version: %w", err)
 	}
 
-	if f.Config.IsDebug {
+	if f.Input.IsDebug {
 		if err := f.runFlutterDoctor(); err != nil {
 			return err
 		}

@@ -74,16 +74,7 @@ func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, strin
 }
 
 func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() (flutterVersion, error) {
-	if f.Config.BundleSpecified {
-		parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Config.BundleURL))
-		if err != nil {
-			f.Debugf("parse version from bundle URL: %w", err)
-		} else if parsedVersion.version != "" || parsedVersion.channel != "" {
-			return parsedVersion, nil
-		}
-	}
-
-	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Config.Version))
+	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Input.Version))
 	if err != nil {
 		f.Debugf("parse version from input: %w", err)
 	} else if parsedVersion.version != "" || parsedVersion.channel != "" {
@@ -234,7 +225,6 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 
 		currentVersion := versionRegexp.FindString(line)
 		if currentVersion != "" {
-			currentVersion = strings.TrimPrefix(currentVersion, "v")
 			for _, channel := range channels {
 				suffix := fmt.Sprintf("-%s", channel)
 				if index := strings.Index(currentVersion, suffix); index != -1 {

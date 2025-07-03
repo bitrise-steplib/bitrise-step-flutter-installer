@@ -42,7 +42,6 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
 | `version` | Use this input to install from the git repository by specifying a tag or branch.  Use this input for the stable channel, as the stable channel can be preinstalled.  If the input Flutter SDK installation bundle URL is specified, this input is ignored.  To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)  To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches) |  | `stable` |
-| `installation_bundle_url` | Installation bundle URL. If specified, Flutter will be installed from here and git repository version is ignored.  For a channel other than stable (e.g. beta), it is recommended to use this input. It is faster than cloning from git.  Official list of Flutter installation bundles: [https://flutter.dev/docs/development/tools/sdk/releases](https://flutter.dev/docs/development/tools/sdk/releases)  The URL is expected to begin with: `https://storage.googleapis.com/flutter_infra`  Example value (beta channel, version 1.6.3, macOS): `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip` |  |  |
 | `is_debug` | If enabled will run flutter doctor and print value of PATH eniroment variable. |  | `false` |
 </details>
 

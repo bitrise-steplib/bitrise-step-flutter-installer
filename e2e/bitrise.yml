@@ -164,10 +164,11 @@ workflows:
             if command -v flutter >/dev/null 2>&1; then
               flutter_bin_path="$(which flutter)"
               # Dont delete if fvm or asdf
-              if [[ "$flutter_bin_path" == *".asdf"* ]] || [[ "$flutter_bin_path" == *".fvm"* ]]; then
-                echo "ERROR: flutter still available via version manager at $flutter_bin_path"
-                exit 1
-              fi
+            if [[ "$flutter_bin_path" == *".asdf"* ]] || \
+              [[ "$flutter_bin_path" == *".fvm"* ]]; then
+              echo "ERROR: flutter still available via version manager at $flutter_bin_path"
+              exit 1
+            fi
 
               # remove the SDK directory
               set -e

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 )
 
 func (f *FlutterInstaller) EnsureFlutterVersion() error {
@@ -19,37 +18,25 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	}
 
 	fvm, asdf, manual := f.NewFlutterInstallTypeFVM(), f.NewFlutterInstallTypeASDF(), f.NewFlutterInstallTypeManual()
-
-	availableManagers := []*FlutterInstallType{}
+	installTypes := []*FlutterInstallType{}
 	switch currentVersion.installType {
 	case ASDFName:
 		if asdf.IsAvailable {
-			availableManagers = append(availableManagers, &asdf)
+			installTypes = append(installTypes, &asdf)
 		}
 		if fvm.IsAvailable {
-			availableManagers = append(availableManagers, &fvm)
+			installTypes = append(installTypes, &fvm)
 		}
 	default:
 		if fvm.IsAvailable {
-			availableManagers = append(availableManagers, &fvm)
+			installTypes = append(installTypes, &fvm)
 		}
 		if asdf.IsAvailable {
-			availableManagers = append(availableManagers, &asdf)
+			installTypes = append(installTypes, &asdf)
 		}
 	}
-
-	installTypes := []*FlutterInstallType{}
-	if strings.TrimSpace(f.Config.BundleURL) != "" {
-		f.Infof("Using Flutter version from bundle: %s", f.Config.BundleURL)
-		if manual.IsAvailable {
-			installTypes = append(installTypes, &manual)
-		}
-		installTypes = append(installTypes, availableManagers...)
-	} else {
-		installTypes = append(installTypes, availableManagers...)
-		if manual.IsAvailable {
-			installTypes = append(installTypes, &manual)
-		}
+	if manual.IsAvailable {
+		installTypes = append(installTypes, &manual)
 	}
 
 	for _, installType := range installTypes {
@@ -86,7 +73,7 @@ func (f *FlutterInstaller) hasRelease(installType *FlutterInstallType, required 
 	f.Debugf("Checking if version: %s channel: %s is available with %s", required.version, required.channel, installType.Name)
 	if installType.ReleasesCommand != nil {
 		releasesCmd := *installType.ReleasesCommand(required)
-		f.Debugf("$ %s", releasesCmd.PrintableCommandArgs())
+		f.Donef("$ %s", releasesCmd.PrintableCommandArgs())
 		if out, err := releasesCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return false, fmt.Errorf("list releases: %s", out)
 		} else if contains, err := f.containsVersion(out, required); err != nil {
@@ -105,7 +92,7 @@ func (f *FlutterInstaller) hasInstalled(installType *FlutterInstallType, require
 	f.Debugf("Checking if version: %s channel: %s is available with %s", required.version, required.channel, installType.Name)
 	if installType.InstalledVersionsCommand != nil {
 		installsCmd := installType.InstalledVersionsCommand
-		f.Debugf("$ %s", installsCmd.PrintableCommandArgs())
+		f.Donef("$ %s", installsCmd.PrintableCommandArgs())
 		if out, err := installsCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 			return false, fmt.Errorf("list instances: %s", out)
 		} else if contains, err := f.containsVersion(out, required); err != nil {
@@ -143,30 +130,27 @@ func (f *FlutterInstaller) containsVersion(output string, required flutterVersio
 }
 
 func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType, required flutterVersion) error {
+	if installType.Install == nil {
+		return fmt.Errorf("no install command defined")
+	}
+
 	f.Debugf("Installing version: %s channel: %s with %s", required.version, required.channel, installType.Name)
-	if installType.FullInstall != nil {
-		if err := installType.FullInstall(); err != nil {
-			return fmt.Errorf("full install: %w", err)
-		}
-	} else if installType.InstallCommand != nil {
+
+	if installType.ReleasesCommand != nil {
 		if hasRelease, err := f.hasRelease(installType, required); err != nil {
 			return fmt.Errorf("check if release exists: %w", err)
 		} else if !hasRelease {
 			return fmt.Errorf("version: %s channel: %s is not available with %s", required.version, required.channel, installType.Name)
 		}
+	}
 
-		installCmd := *installType.InstallCommand(required)
-		f.Debugf("$ %s", installCmd.PrintableCommandArgs())
-		if out, err := installCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-			return fmt.Errorf("install: %s", out)
-		}
-	} else {
-		return fmt.Errorf("no install command defined")
+	if err := installType.Install(required); err != nil {
+		return fmt.Errorf("install: %s", err)
 	}
 
 	if installType.SetDefaultCommand != nil {
 		setCmd := *installType.SetDefaultCommand(required)
-		f.Debugf("$ %s", setCmd.PrintableCommandArgs())
+		f.Donef("$ %s", setCmd.PrintableCommandArgs())
 		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 			return fmt.Errorf("set version default: %s", out)
 		}
@@ -177,7 +161,7 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 		return nil
 	} else {
 		listCmd := installType.InstalledVersionsCommand
-		f.Debugf("$ %s", listCmd.PrintableCommandArgs())
+		f.Donef("$ %s", listCmd.PrintableCommandArgs())
 		out, err := listCmd.RunAndReturnTrimmedOutput()
 		f.Debugf("list Flutter versions with %s: %s %s", installType.Name, err, out)
 
@@ -195,7 +179,7 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 	}
 
 	setCmd := *installType.SetDefaultCommand(required)
-	f.Debugf("$ %s", setCmd.PrintableCommandArgs())
+	f.Donef("$ %s", setCmd.PrintableCommandArgs())
 	if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
 		return fmt.Errorf("set version default: %s", out)
 	}

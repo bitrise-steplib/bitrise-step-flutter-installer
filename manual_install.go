@@ -10,9 +10,110 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bitrise-io/go-steputils/tools"
+	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
+
+func (f *FlutterInstaller) DownloadFlutterSDK() error {
+	required := f.Input.Version
+	if required == "" {
+		return fmt.Errorf("input: 'Flutter SDK git repository version' (version) is not")
+	}
+
+	f.Infof("Downloading Flutter SDK")
+
+	sdkPathParent := filepath.Join(os.Getenv("HOME"), "flutter-sdk")
+	flutterSDKPath := filepath.Join(sdkPathParent, "flutter")
+
+	f.Printf("Cleaning SDK target path: %s", sdkPathParent)
+	if err := os.RemoveAll(sdkPathParent); err != nil {
+		return fmt.Errorf("remove path(%s): %s", sdkPathParent, err)
+	}
+
+	if err := os.MkdirAll(sdkPathParent, 0770); err != nil {
+		return fmt.Errorf("create folder (%s): %s", sdkPathParent, err)
+	}
+
+	if validateFlutterURL(required) == nil {
+		f.Infof("Downloading and unarchiving Flutter from installation bundle: %s", required)
+
+		if err := f.downloadAndUnarchiveBundle(required, sdkPathParent); err != nil {
+			return fmt.Errorf("download and unarchive bundle: %s", err)
+		}
+	} else {
+		f.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
+		f.Infof("Selected branch/tag: %s", required)
+
+		// repository name ('flutter') is in the path, will be checked out there
+		cmd := f.CmdFactory.Create("git", []string{
+			"clone",
+			"https://github.com/flutter/flutter.git",
+			flutterSDKPath,
+			"--depth", "1",
+			"--branch", required,
+		}, nil)
+		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			return fmt.Errorf("clone git repo for tag/branch: %s: %s", required, out)
+		}
+	}
+
+	f.Printf("Adding flutter bin directory to $PATH")
+	f.Debugf("PATH: %s", os.Getenv("PATH"))
+
+	path := filepath.Join(flutterSDKPath, "bin")
+	path += ":" + filepath.Join(flutterSDKPath, "bin", "cache", "dart-sdk", "bin")
+	path += ":" + filepath.Join(flutterSDKPath, ".pub-cache", "bin")
+	path += ":" + filepath.Join(os.Getenv("HOME"), ".pub-cache", "bin")
+	path += ":" + os.Getenv("PATH")
+
+	if err := os.Setenv("PATH", path); err != nil {
+		return fmt.Errorf("set env: %s", err)
+	}
+
+	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
+		return fmt.Errorf("export env with envman: %s", err)
+	}
+
+	f.Donef("Added to $PATH")
+	f.Debugf("PATH: %s", os.Getenv("PATH"))
+
+	if f.Input.IsDebug {
+		flutterBinPath, err := exec.LookPath("flutter")
+		if err != nil {
+			return fmt.Errorf("get Flutter binary path")
+		}
+		f.Infof("Flutter binary path: %s", flutterBinPath)
+
+		cmdOpts := command.Opts{
+			Stdout: os.Stdout,
+			Stderr: os.Stderr,
+		}
+		treeCmd := f.CmdFactory.Create("tree", []string{"-L", "3", sdkPathParent}, &cmdOpts)
+		f.Donef("$ %s", treeCmd.PrintableCommandArgs())
+		if err := treeCmd.Run(); err != nil {
+			f.Warnf("run tree command: %s", err)
+		}
+
+		f.printDirOwner(flutterSDKPath)
+	}
+
+	return nil
+}
+
+func (f *FlutterInstaller) printDirOwner(flutterSDKPath string) {
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	dirOwnerCmd := f.CmdFactory.Create("ls", []string{"-al", flutterSDKPath}, &cmdOpts)
+	f.Donef("$ %s", dirOwnerCmd.PrintableCommandArgs())
+	if err := dirOwnerCmd.Run(); err != nil {
+		f.Warnf("run ls: %s", err)
+	}
+}
 
 func (f *FlutterInstaller) downloadAndUnarchiveBundle(bundleURL, targetDir string) error {
 	if err := validateFlutterURL(bundleURL); err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 func (f *FlutterInstaller) EnsureFlutterVersion() error {
@@ -156,16 +157,20 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 		return fmt.Errorf("ensure setup finished: %w", err)
 	}
 
-	if installType.SetDefaultCommand != nil {
-		setCmd := *installType.SetDefaultCommand(required)
-		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
-			return fmt.Errorf("set version default: %s", out)
+	if installType.SetDefault != nil {
+		if err := installType.SetDefault(required); err != nil {
+			return fmt.Errorf("set version default: %s", err)
 		} else if err := f.ensureSetupFinished(); err != nil {
 			return fmt.Errorf("ensure setup finished: %w", err)
 		}
 	}
 
-	if installed, _ := f.compareVersionToCurrent(required); installed {
+	requiredTrimmed := flutterVersion{
+		version:     strings.TrimPrefix(required.version, "v"),
+		channel:     required.channel,
+		installType: installType.Name,
+	}
+	if installed, _ := f.compareVersionToCurrent(requiredTrimmed); installed {
 		f.Donef("Version: %s channel: %s set as default with %s", required.version, required.channel, installType.Name)
 		return nil
 	} else {
@@ -187,16 +192,20 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 		return fmt.Errorf("version: %s channel: %s is not available with %s", required.version, required.channel, installType.Name)
 	}
 
-	if installType.SetDefaultCommand != nil {
-		setCmd := *installType.SetDefaultCommand(required)
-		if out, err := setCmd.RunAndReturnTrimmedOutput(); err != nil {
-			return fmt.Errorf("set version default: %s", out)
+	if installType.SetDefault != nil {
+		if err := installType.SetDefault(required); err != nil {
+			return fmt.Errorf("set version default: %s", err)
 		} else if err := f.ensureSetupFinished(); err != nil {
 			return fmt.Errorf("ensure setup finished: %w", err)
 		}
 	}
 
-	if installed, _ := f.compareVersionToCurrent(required); installed {
+	requiredTrimmed := flutterVersion{
+		version:     strings.TrimPrefix(required.version, "v"),
+		channel:     required.channel,
+		installType: installType.Name,
+	}
+	if installed, _ := f.compareVersionToCurrent(requiredTrimmed); installed {
 		f.Donef("Version: %s channel: %s set as default with %s", required.version, required.channel, installType.Name)
 		return nil
 	} else {

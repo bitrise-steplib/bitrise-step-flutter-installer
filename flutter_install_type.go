@@ -21,7 +21,7 @@ type FlutterInstallType struct {
 	InstalledVersionsCommand func() *command.Command                       // command to list available versions installed by the tool
 	ReleasesCommand          func(version flutterVersion) *command.Command // command to list available releases (if applicable)
 	Install                  func(version flutterVersion) error            // function to install a specific version
-	SetDefaultCommand        func(version flutterVersion) *command.Command // function to set a specific version as default (if applicable)
+	SetDefault               func(version flutterVersion) error            // function to set a specific version as default (if applicable)
 	FullInstall              func() error                                  // function to perform a full install, if needed
 }
 
@@ -73,18 +73,22 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 				f.Debugf("Installed Flutter: %s", out)
 				cachePath := fmt.Sprintf("%s/fvm/default/bin/flutter", os.Getenv("HOME"))
 				path := os.Getenv("PATH")
-				os.Setenv("PATH", fmt.Sprintf("%s:%s", cachePath, path))
-				f.Debugf("Added asdf shims to PATH: %s", cachePath)
-				f.Debugf("Updated PATH: %s", os.Getenv("PATH"))
+				if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", cachePath, path)); err != nil {
+					return fmt.Errorf("set env: %s", err)
+				}
+				f.Debugf("Added asdf shims to PATH: %s", os.Getenv("PATH"))
 			}
 			return nil
 		},
-		SetDefaultCommand: func(version flutterVersion) *command.Command {
+		SetDefault: func(version flutterVersion) error {
 			args := append([]string{"global", fvmCreateVersionString(version)}, defaultArgs...)
 
 			cmd := f.CmdFactory.Create("fvm", args, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
-			return &cmd
+			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+				return fmt.Errorf("set version default: %s %s", err, out)
+			}
+			return nil
 		},
 		ReleasesCommand: func(version flutterVersion) *command.Command {
 			args := append([]string{"releases"}, defaultArgs...)
@@ -172,16 +176,31 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 				f.Debugf("Installed Flutter: %s", out)
 				shimsPath := fmt.Sprintf("%s/.asdf/shims/flutter", os.Getenv("HOME"))
 				path := os.Getenv("PATH")
-				os.Setenv("PATH", fmt.Sprintf("%s:%s", shimsPath, path))
-				f.Debugf("Added asdf shims to PATH: %s", shimsPath)
-				f.Debugf("Updated PATH: %s", os.Getenv("PATH"))
+				if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", shimsPath, path)); err != nil {
+					return fmt.Errorf("set env: %s", err)
+				}
+				f.Debugf("Added asdf shims to PATH: %s", os.Getenv("PATH"))
 			}
 			return nil
 		},
-		SetDefaultCommand: func(version flutterVersion) *command.Command {
-			cmd := f.CmdFactory.Create("asdf", []string{"global", "flutter", asdfCreateVersionString(version)}, nil)
+		SetDefault: func(version flutterVersion) error {
+			versionString := asdfCreateVersionString(version)
+			cmd := f.CmdFactory.Create("asdf", []string{"reshim", "flutter", versionString}, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
-			return &cmd
+			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+				return fmt.Errorf("reshim version: %s %s", err, out)
+			}
+			cmd = f.CmdFactory.Create("asdf", []string{"global", "flutter", versionString}, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
+			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+				return fmt.Errorf("set version global: %s %s", err, out)
+			}
+			cmd = f.CmdFactory.Create("asdf", []string{"local", "flutter", versionString}, nil)
+			f.Donef("$ %s", cmd.PrintableCommandArgs())
+			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+				return fmt.Errorf("set version local: %s %s", err, out)
+			}
+			return nil
 		},
 		ReleasesCommand: func(version flutterVersion) *command.Command {
 			cmd := f.CmdFactory.Create("asdf", []string{"list", "all", "flutter"}, nil)

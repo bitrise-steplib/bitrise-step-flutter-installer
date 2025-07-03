@@ -193,7 +193,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeManual() FlutterInstallType {
 			return &cmd
 		},
 		Install: func(version flutterVersion) error {
-			return f.DownloadFlutterSDK()
+			return f.DownloadFlutterSDK(version)
 		},
 	}
 }

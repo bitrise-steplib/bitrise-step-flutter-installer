@@ -16,9 +16,8 @@ import (
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
 
-func (f *FlutterInstaller) DownloadFlutterSDK() error {
-	required := f.Input.Version
-	if required == "" {
+func (f *FlutterInstaller) DownloadFlutterSDK(required flutterVersion) error {
+	if required.version == "" && required.channel == "" && f.Input.Version == "" {
 		return fmt.Errorf("input: 'Flutter SDK git repository version' (version) is not")
 	}
 
@@ -36,15 +35,20 @@ func (f *FlutterInstaller) DownloadFlutterSDK() error {
 		return fmt.Errorf("create folder (%s): %s", sdkPathParent, err)
 	}
 
-	if validateFlutterURL(required) == nil {
+	if validateFlutterURL(f.Input.Version) == nil {
 		f.Infof("Downloading and unarchiving Flutter from installation bundle: %s", required)
 
-		if err := f.downloadAndUnarchiveBundle(required, sdkPathParent); err != nil {
+		if err := f.downloadAndUnarchiveBundle(f.Input.Version, sdkPathParent); err != nil {
 			return fmt.Errorf("download and unarchive bundle: %s", err)
 		}
 	} else {
 		f.Infof("Cloning Flutter from the git repository (https://github.com/flutter/flutter.git)")
 		f.Infof("Selected branch/tag: %s", required)
+
+		branchOrTag := required.version
+		if branchOrTag == "" {
+			branchOrTag = required.channel
+		}
 
 		// repository name ('flutter') is in the path, will be checked out there
 		cmd := f.CmdFactory.Create("git", []string{
@@ -52,7 +56,7 @@ func (f *FlutterInstaller) DownloadFlutterSDK() error {
 			"https://github.com/flutter/flutter.git",
 			flutterSDKPath,
 			"--depth", "1",
-			"--branch", required,
+			"--branch", branchOrTag,
 		}, nil)
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {

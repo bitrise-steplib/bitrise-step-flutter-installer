@@ -163,32 +163,38 @@ workflows:
 
             if command -v flutter >/dev/null 2>&1; then
               flutter_bin_path="$(which flutter)"
-              # Dont delete if fvm or asdf
-            if [[ "$flutter_bin_path" == *".asdf"* ]] || \
-              [[ "$flutter_bin_path" == *".fvm"* ]]; then
-              echo "ERROR: flutter still available via version manager at $flutter_bin_path"
-              exit 1
-            fi
-
-              # remove the SDK directory
-              set -e
-              flutter_bin_dir="$(dirname "$flutter_bin_path")"
-              flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
-              echo "Cleaning up flutter sdk: $flutter_sdk_dir"
-              set +e
-              rm -rf "$flutter_sdk_dir"
-              if [ $? != 0 ]; then
-                echo "flutter sdk cleanup failed, trying with sudo"
-                sudo rm -rf "$flutter_sdk_dir"
+              # If managed by fvm or asdf, skip SDK removal but do not exit
+              if [[ "$flutter_bin_path" == *"asdf"* ]] || \
+                [[ "$flutter_bin_path" == *"fvm"* ]]; then
+                echo "flutter is managed by a version manager at $flutter_bin_path, skipping SDK removal"
+              else
+                # remove the SDK directory
+                set -e
+                flutter_bin_dir="$(dirname "$flutter_bin_path")"
+                flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
+                echo "Cleaning up flutter sdk: $flutter_sdk_dir"
+                set +e
+                rm -rf "$flutter_sdk_dir"
                 if [ $? != 0 ]; then
-                  echo "flutter sdk cleanup failed"
-                  exit 1
+                  echo "flutter sdk cleanup failed, trying with sudo"
+                  sudo rm -rf "$flutter_sdk_dir"
+                  if [ $? != 0 ]; then
+                    echo "flutter sdk cleanup failed"
+                    exit 1
+                  fi
                 fi
               fi
 
+              # Remove flutter from PATH for current session
+              echo "Removing flutter from PATH"
+              echo "Current PATH: $PATH"
+              export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v "$(dirname "$flutter_bin_path")" | paste -sd: -)"
+              hash -r
+              echo "Updated PATH: $PATH"
+
               # Final check
               if command -v flutter >/dev/null 2>&1; then
-                echo "flutter sdk cleanup failed, flutter still on PATH"
+                echo "flutter still on PATH after removal attempt"
                 exit 1
               fi
             fi

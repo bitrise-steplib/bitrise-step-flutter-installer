@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -70,6 +71,11 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 				return fmt.Errorf("install: %s %s", err, out)
 			} else {
 				f.Debugf("Installed Flutter: %s", out)
+				cachePath := fmt.Sprintf("%s/fvm/default/bin/flutter", os.Getenv("HOME"))
+				path := os.Getenv("PATH")
+				os.Setenv("PATH", fmt.Sprintf("%s:%s", cachePath, path))
+				f.Debugf("Added asdf shims to PATH: %s", cachePath)
+				f.Debugf("Updated PATH: %s", os.Getenv("PATH"))
 			}
 			return nil
 		},
@@ -164,6 +170,11 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 				return fmt.Errorf("install: %s %s", err, out)
 			} else {
 				f.Debugf("Installed Flutter: %s", out)
+				shimsPath := fmt.Sprintf("%s/.asdf/shims/flutter", os.Getenv("HOME"))
+				path := os.Getenv("PATH")
+				os.Setenv("PATH", fmt.Sprintf("%s:%s", shimsPath, path))
+				f.Debugf("Added asdf shims to PATH: %s", shimsPath)
+				f.Debugf("Updated PATH: %s", os.Getenv("PATH"))
 			}
 			return nil
 		},

@@ -37,17 +37,17 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 		}
 	}
 
-	useSetupFlag, useSkipInputFlag, useAPI, err := fvmParseVersionAndFeatures(versionOut)
+	after3_0_0, after3_1_0, after3_2_1, err := fvmParseVersionAndFeatures(versionOut)
 	if err != nil {
 		f.Warnf("Failed to investigate FVM version: %s", err)
 	}
 	listArgs := []string{"list"}
-	if useAPI {
+	if after3_1_0 {
 		listArgs = []string{"api", "list", "--skip-size-calculation"}
 	}
 
 	defaultArgs := []string{}
-	if useSkipInputFlag {
+	if after3_2_1 {
 		defaultArgs = append(defaultArgs, "--fvm-skip-input")
 	}
 
@@ -61,7 +61,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 		},
 		Install: func(version flutterVersion) error {
 			args := append([]string{"install", fvmCreateVersionString(version)}, defaultArgs...)
-			if useSetupFlag {
+			if after3_0_0 {
 				args = append(args, "--setup")
 			}
 
@@ -76,7 +76,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 				if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", cachePath, path)); err != nil {
 					return fmt.Errorf("set env: %s", err)
 				}
-				f.Debugf("Added asdf shims to PATH: %s", os.Getenv("PATH"))
+				f.Debugf("Added fvm cache to PATH: %s", os.Getenv("PATH"))
 			}
 			return nil
 		},
@@ -92,7 +92,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 		},
 		ReleasesCommand: func(version flutterVersion) *command.Command {
 			args := append([]string{"releases"}, defaultArgs...)
-			if version.channel != "stable" && version.channel != "" {
+			if after3_0_0 && version.channel != "stable" && version.channel != "" {
 				args = append(args, "--channel", version.channel)
 			}
 
@@ -103,9 +103,9 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 	}
 }
 
-func fvmParseVersionAndFeatures(versionOut string) (useSetupFlag, useSkipInputFlag, useAPIFlag bool, err error) {
-	useSetupFlag = false
-	useSkipInputFlag = false
+func fvmParseVersionAndFeatures(versionOut string) (after3_0_0, after3_1_0, after3_2_1 bool, err error) {
+	after3_0_0 = false
+	after3_2_1 = false
 	regex := regexp.MustCompile(`\d+\.\d+\.\d+`)
 	versionParts := strings.Split(regex.FindString(versionOut), ".")
 	if len(versionParts) >= 3 {
@@ -119,9 +119,9 @@ func fvmParseVersionAndFeatures(versionOut string) (useSetupFlag, useSkipInputFl
 				return
 			}
 
-			useSetupFlag = true                                                    // FVM 3.0.0 and above
-			useAPIFlag = major > 3 || minor > 0 || (minor == 1 && patch > 0)       // FVM 3.1.0 and above
-			useSkipInputFlag = major > 3 || minor > 2 || (minor == 2 && patch > 0) // FVM 3.2.1 and above
+			after3_0_0 = true                                                // FVM 3.0.0 and above
+			after3_1_0 = major > 3 || minor > 0 || (minor == 1 && patch > 0) // FVM 3.1.0 and above
+			after3_2_1 = major > 3 || minor > 2 || (minor == 2 && patch > 0) // FVM 3.2.1 and above
 
 			return
 		}

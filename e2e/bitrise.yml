@@ -87,9 +87,7 @@ workflows:
         run_if: "true"
         title: platform specific bundle install
         inputs:
-        - installation_bundle_url: $BUNDLE_URL
-          opts:
-            is_expand: true
+        - version: $BUNDLE_URL
         - is_debug: "true"
 
   test_clean_install_dev:

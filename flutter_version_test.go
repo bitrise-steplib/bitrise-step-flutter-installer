@@ -210,7 +210,7 @@ Tools • Dart 2.3.2 (build 2.3.2-dev.0.0 5b72293f49)
 
 const bundleURL = "https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip"
 
-func Test_matchFlutterOutputVersion(t *testing.T) {
+func Test_NewFlutterVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -247,6 +247,11 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 			name:  "bundle URL",
 			input: bundleURL,
 			want:  flutterVersion{version: "v1.6.3", channel: "beta"},
+		},
+		{
+			name:  "asterisk in version",
+			input: "*3.32.5-stable",
+			want:  flutterVersion{version: "3.32.5", channel: "stable"},
 		},
 		{
 			name:  "valid version and channel",
@@ -299,7 +304,7 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 	}
 }
 
-func Test_matchFlutterAPIOutput(t *testing.T) {
+func Test_NewFlutterVersionList(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string

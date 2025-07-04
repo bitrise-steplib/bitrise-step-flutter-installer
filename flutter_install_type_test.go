@@ -2,14 +2,14 @@ package main
 
 import "testing"
 
-func TestFVMFeatures(t *testing.T) {
+func Test_fvmParseVersionAndFeatures(t *testing.T) {
 	tests := []struct {
-		name             string
-		input            string
-		useSetupFlag     bool
-		useSkipInputFlag bool
-		useAPI           bool
-		wantErr          bool
+		name       string
+		input      string
+		after3_0_0 bool
+		after3_2_1 bool
+		after3_1_0 bool
+		wantErr    bool
 	}{
 		{
 			name:  "Legacy case",
@@ -20,54 +20,54 @@ func TestFVMFeatures(t *testing.T) {
 			input: "2.23.2",
 		},
 		{
-			name:         "On setup change",
-			input:        "3.0.0",
-			useSetupFlag: true,
+			name:       "On setup change",
+			input:      "3.0.0",
+			after3_0_0: true,
 		},
 		{
-			name:         "Before API release",
-			input:        "3.0.19",
-			useSetupFlag: true,
+			name:       "Before API release",
+			input:      "3.0.19",
+			after3_0_0: true,
 		},
 		{
-			name:         "On API release",
-			input:        "3.1.0",
-			useSetupFlag: true,
-			useAPI:       true,
+			name:       "On API release",
+			input:      "3.1.0",
+			after3_0_0: true,
+			after3_1_0: true,
 		},
 		{
-			name:             "Before skip input flag worked",
-			input:            "3.2.0",
-			useSetupFlag:     true,
-			useAPI:           true,
-			useSkipInputFlag: false,
+			name:       "Before skip input flag worked",
+			input:      "3.2.0",
+			after3_0_0: true,
+			after3_1_0: true,
+			after3_2_1: false,
 		},
 		{
-			name:             "On skip input flag working",
-			input:            "3.2.1",
-			useSetupFlag:     true,
-			useAPI:           true,
-			useSkipInputFlag: true,
+			name:       "On skip input flag working",
+			input:      "3.2.1",
+			after3_0_0: true,
+			after3_1_0: true,
+			after3_2_1: true,
 		},
 		{
-			name:             "v prefix",
-			input:            "v3.3.3",
-			useSetupFlag:     true,
-			useAPI:           true,
-			useSkipInputFlag: true,
+			name:       "v prefix",
+			input:      "v3.3.3",
+			after3_0_0: true,
+			after3_1_0: true,
+			after3_2_1: true,
 		},
 		{
-			name:             "Long version",
-			input:            "13.172.76",
-			useSetupFlag:     true,
-			useAPI:           true,
-			useSkipInputFlag: true,
+			name:       "Long version",
+			input:      "13.172.76",
+			after3_0_0: true,
+			after3_1_0: true,
+			after3_2_1: true,
 		},
 		{
-			name:         "fvm and flutter version",
-			input:        "fvm 3.1.6 with flutter 2.1.3",
-			useSetupFlag: true,
-			useAPI:       true,
+			name:       "fvm and flutter version",
+			input:      "fvm 3.1.6 with flutter 2.1.3",
+			after3_0_0: true,
+			after3_1_0: true,
 		},
 		{
 			name:    "Not found",
@@ -82,24 +82,24 @@ func TestFVMFeatures(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			useSetup, useInput, useAPI, err := fvmParseVersionAndFeatures(tt.input)
+			after3_0_0, after3_1_0, after3_2_1, err := fvmParseVersionAndFeatures(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("fvmParseVersionAndFeatures error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if useSetup != tt.useSetupFlag {
-				t.Errorf("fvmParseVersionAndFeatures useSetup = %v, want %v", useSetup, tt.useSetupFlag)
+			if after3_0_0 != tt.after3_0_0 {
+				t.Errorf("fvmParseVersionAndFeatures useSetup = %v, want %v", after3_0_0, tt.after3_0_0)
 			}
-			if useInput != tt.useSkipInputFlag {
-				t.Errorf("fvmParseVersionAndFeatures useSkipInputFlag = %v, want %v", useInput, tt.useSkipInputFlag)
+			if after3_2_1 != tt.after3_2_1 {
+				t.Errorf("fvmParseVersionAndFeatures useSkipInputFlag = %v, want %v", after3_2_1, tt.after3_2_1)
 			}
-			if useAPI != tt.useAPI {
-				t.Errorf("fvmParseVersionAndFeatures useAPI = %v, want %v", useAPI, tt.useAPI)
+			if after3_1_0 != tt.after3_1_0 {
+				t.Errorf("fvmParseVersionAndFeatures useAPI = %v, want %v", after3_1_0, tt.after3_1_0)
 			}
 		})
 	}
 }
-func TestFVMVersionString(t *testing.T) {
+func Test_fvmCreateVersionString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    flutterVersion
@@ -138,7 +138,7 @@ func TestFVMVersionString(t *testing.T) {
 	}
 }
 
-func TestASDFVersionString(t *testing.T) {
+func Test_asdfCreateVersionString(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    flutterVersion

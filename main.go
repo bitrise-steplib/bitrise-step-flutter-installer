@@ -12,8 +12,9 @@ import (
 	logv2 "github.com/bitrise-io/go-utils/v2/log"
 )
 
-func main() {
-	os.Exit(int(run()))
+type Input struct {
+	Version string `env:"version"`
+	IsDebug bool   `env:"is_debug"`
 }
 
 type FlutterInstaller struct {
@@ -23,13 +24,8 @@ type FlutterInstaller struct {
 	Input      Input
 }
 
-func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, Input Input) FlutterInstaller {
-	return FlutterInstaller{
-		Logger:     logger,
-		EnvRepo:    envRepo,
-		CmdFactory: cmdFactory,
-		Input:      Input,
-	}
+func main() {
+	os.Exit(int(run()))
 }
 
 func run() exitcode.ExitCode {
@@ -47,9 +43,28 @@ func run() exitcode.ExitCode {
 	return exitcode.Success
 }
 
-type Input struct {
-	Version string `env:"version"`
-	IsDebug bool   `env:"is_debug"`
+func (f *FlutterInstaller) Run() error {
+	// getting SDK versions from project files (fvm, asdf, pubspec)
+	if err := f.EnsureFlutterVersion(); err != nil {
+		return fmt.Errorf("ensure Flutter version: %w", err)
+	}
+
+	if f.Input.IsDebug {
+		if err := f.runFlutterDoctor(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, Input Input) FlutterInstaller {
+	return FlutterInstaller{
+		Logger:     logger,
+		EnvRepo:    envRepo,
+		CmdFactory: cmdFactory,
+		Input:      Input,
+	}
 }
 
 func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
@@ -78,21 +93,6 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, input)
 
 	return &fi, nil
-}
-
-func (f *FlutterInstaller) Run() error {
-	// getting SDK versions from project files (fvm, asdf, pubspec)
-	if err := f.EnsureFlutterVersion(); err != nil {
-		return fmt.Errorf("ensure Flutter version: %w", err)
-	}
-
-	if f.Input.IsDebug {
-		if err := f.runFlutterDoctor(); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func (f *FlutterInstaller) runFlutterDoctor() error {

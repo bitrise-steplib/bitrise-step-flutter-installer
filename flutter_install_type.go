@@ -30,7 +30,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 	f.Donef("$ %s", cmd.PrintableCommandArgs())
 	versionOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		f.Warnf("fvm is not available: %s", versionOut)
+		f.Warnf("fvm version manager is not available")
 		return FlutterInstallType{
 			Name:        FVMName,
 			IsAvailable: false,
@@ -125,9 +125,9 @@ func fvmParseVersionAndFeatures(versionOut string) (useSetupFlag, useSkipInputFl
 
 			return
 		}
-		err = fmt.Errorf("failed to parse fvm version: %s: major:%w minor: %w patch: %w", versionOut, majorErr, minorErr, patchErr)
+		err = fmt.Errorf("parse fvm version: %s:\nmajor:%w\nminor: %w\npatch: %w", versionOut, majorErr, minorErr, patchErr)
 	} else {
-		err = fmt.Errorf("failed to parse fvm version: %s", versionOut)
+		err = fmt.Errorf("parse fvm version: %s", versionOut)
 	}
 
 	return
@@ -152,7 +152,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 	f.Donef("$ %s", cmd.PrintableCommandArgs())
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil || !strings.Contains(out, "flutter") {
-		f.Warnf("asdf is not available: %s", out)
+		f.Warnf("asdf version manager is not available")
 		return FlutterInstallType{
 			Name:        ASDFName,
 			IsAvailable: false,
@@ -214,9 +214,24 @@ func asdfCreateVersionString(version flutterVersion) string {
 	versionString := version.version
 	if versionString == "" {
 		versionString = "latest" // default to latest if no version is specified
-	} else if version.channel != "" {
-		versionString += "-" + version.channel
+	} else {
+		channelIncluded := false
+		for _, channel := range Channels {
+			if strings.Contains(versionString, channel) {
+				channelIncluded = true
+				break
+			}
+		}
+		if !channelIncluded {
+			if version.channel != "" {
+				versionString += "-" + version.channel
+			} else {
+				versionString = "stable" // default to stable if no version is specified
+			}
+		}
+
 	}
+
 	return versionString
 }
 

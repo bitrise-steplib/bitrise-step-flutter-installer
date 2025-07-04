@@ -2,10 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/go-flutter/flutterproject"
@@ -17,13 +16,15 @@ import (
 	"github.com/bitrise-steplib/bitrise-step-flutter-installer/tracker"
 )
 
-var channels = []string{
+var Channels = []string{
 	"stable",
 	"beta",
 	"dev",
 	"main",
 	"master",
 }
+
+const flutterVersionRegexp = `v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`
 
 type flutterVersion struct {
 	version     string
@@ -43,7 +44,7 @@ func NewFlutterVersion(input string) (flutterVersion, error) {
 	return flutterVersion{}, fmt.Errorf("parse flutter version and channel from input: %s", input)
 }
 
-func NewFlutterVersions(input string) ([]flutterVersion, error) {
+func NewFlutterVersionList(input string) ([]flutterVersion, error) {
 	if versions, err := parseVersionsFromJson(input, false); err == nil && len(versions) > 0 {
 		return versions, nil
 	}
@@ -60,17 +61,13 @@ func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, error
 	f.Donef("$ %s", versionCmd.PrintableCommandArgs())
 	out, err := versionCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			return flutterVersion{}, fmt.Errorf("get flutter version: %s %s", err, out)
-		}
-		return flutterVersion{}, fmt.Errorf("get flutter version: %s", err)
+		return flutterVersion{}, fmt.Errorf("get flutter version: %s %s", err, out)
 	} else {
 		f.Debugf("Flutter version output: %s", out)
 	}
 
 	flutterVer, err := NewFlutterVersion(out)
-	f.Debugf("Current Flutter version: %s, channel: %s", flutterVer.version, flutterVer.channel)
+	f.Debugf("Current Flutter: %s", f.NewVersionString(flutterVer))
 
 	return flutterVer, err
 }
@@ -91,6 +88,21 @@ func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() (flutterVersio
 	}
 
 	return flutterVersion{}, fmt.Errorf("no Flutter version specified in the configuration or project files")
+}
+
+func (f *FlutterInstaller) NewVersionString(version flutterVersion) string {
+	versionString := version.version
+
+	if versionString != "" {
+		if version.channel != "" {
+			versionString += "(" + version.channel + ")"
+		}
+	} else if version.channel != "" {
+		versionString = version.channel
+	} else {
+		versionString = "unknown"
+	}
+	return versionString
 }
 
 func parseVersionsFromJson(input string, singleResult bool) ([]flutterVersion, error) {
@@ -148,46 +160,46 @@ func parseVersionsFromJson(input string, singleResult bool) ([]flutterVersion, e
 }
 
 func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
+	versionKeys := []string{"flutterVersion", "flutterSdkVersion", "frameworkVersion"}
 	version := ""
-	if v, ok := data["flutterVersion"].(string); ok && v != "" {
-		version = v
-	} else if v, ok := data["flutterSdkVersion"].(string); ok && v != "" {
-		version = v
-	} else if v, ok := data["frameworkVersion"].(string); ok && v != "" {
-		version = v
-	} else if t, ok := data["type"].(string); ok && t == "release" {
-		if n, ok := data["name"].(string); ok && n != "" {
-			version = n
+	for _, key := range versionKeys {
+		version = extractVersion(&data, key)
+		if version != "" {
+			break
+		}
+	}
+	if version == "" {
+		// Special case: if type == "release", check "name"
+		if t, ok := data["type"].(string); ok && t == "release" {
+			version = extractVersion(&data, "name")
 		}
 	}
 
+	channelKeys := []string{"channel", "releaseFromChannel"}
 	channel := ""
-	if c, ok := data["channel"].(string); ok && c != "" && containsString(channels, c) {
-		channel = c
-	} else if c, ok := data["releaseFromChannel"].(string); ok && c != "" && containsString(channels, c) {
-		channel = c
-	} else if t, ok := data["type"].(string); ok && t == "channel" {
-		if n, ok := data["name"].(string); ok && n != "" && containsString(channels, n) {
-			channel = n
+	for _, key := range channelKeys {
+		channel = extractChannel(&data, key)
+		if channel != "" {
+			break
 		}
 	}
+	if channel == "" {
+		// Special case: if type == "channel", check "name"
+		if t, ok := data["type"].(string); ok && t == "channel" {
+			channel = extractChannel(&data, "name")
+		}
+	}
+
 	if version == "" && channel == "" {
 		return flutterVersion{}, fmt.Errorf("find flutter version and channel in JSON output")
 	}
 
+	// Determine the install type based on the presence of 'fvm' or 'asdf' in the paths
 	var installType string
-	if m, ok := data["flutterRoot"].(string); ok && m != "" {
-		if strings.Contains(m, FVMName) {
-			installType = FVMName
-		} else if strings.Contains(m, ASDFName) {
-			installType = ASDFName
-		}
-	} else if m, ok := data["binPath"].(string); ok && m != "" {
-		if strings.Contains(m, FVMName) {
-			installType = FVMName
-		} else if strings.Contains(m, ASDFName) {
-			installType = ASDFName
-		}
+	if it := extractRoot(&data, "flutterRoot"); it != "" {
+		installType = it
+	} else if it = extractRoot(&data, "binPath"); it != "" {
+		installType = it
 	}
 
 	return flutterVersion{
@@ -197,18 +209,42 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 	}, nil
 }
 
-func containsString(slice []string, str string) bool {
-	for _, v := range slice {
-		if v == str {
-			return true
+func extractVersion(data *map[string]any, key string) string {
+	if v, ok := (*data)[key].(string); ok {
+		v = strings.TrimSpace(v)
+		v = strings.ToLower(v)
+		if v != "" && regexp.MustCompile(flutterVersionRegexp).MatchString(v) {
+			return v
 		}
 	}
-	return false
+	return ""
+}
+
+func extractChannel(data *map[string]any, key string) string {
+	if c, ok := (*data)[key].(string); ok {
+		c = strings.TrimSpace(c)
+		c = strings.ToLower(c)
+		if c != "" && slices.Contains(Channels, c) {
+			return c
+		}
+	}
+	return ""
+}
+
+func extractRoot(data *map[string]any, key string) string {
+	if m, ok := (*data)[key].(string); ok {
+		if strings.Contains(m, FVMName) {
+			return FVMName
+		} else if strings.Contains(m, ASDFName) {
+			return ASDFName
+		}
+	}
+	return ""
 }
 
 func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVersion, error) {
-	versionRegexp := regexp.MustCompile(`v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`)
-	channelsString := strings.Join(channels, "|")
+	versionRegexp := regexp.MustCompile(flutterVersionRegexp)
+	channelsString := strings.Join(Channels, "|")
 	channelRegexp := regexp.MustCompile(`(?i)(` + channelsString + `)\b`)
 
 	defaultManager := ""
@@ -228,7 +264,7 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 
 		currentVersion := versionRegexp.FindString(lowerLine)
 		if currentVersion != "" {
-			for _, channel := range channels {
+			for _, channel := range Channels {
 				suffix := fmt.Sprintf("-%s", channel)
 				if index := strings.Index(currentVersion, suffix); index != -1 {
 					currentVersion = currentVersion[:index]

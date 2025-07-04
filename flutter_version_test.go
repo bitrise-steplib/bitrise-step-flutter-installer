@@ -416,7 +416,7 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFlutterVersions(tt.input)
+			got, err := NewFlutterVersionList(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return

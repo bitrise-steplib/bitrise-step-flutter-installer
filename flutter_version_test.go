@@ -289,11 +289,11 @@ func Test_matchFlutterOutputVersion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewFlutterVersion(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewFlutterVersion error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("matchVersion() = %v, want %v", got, tt.want)
+				t.Errorf("NewFlutterVersion = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -418,17 +418,17 @@ func Test_matchFlutterAPIOutput(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewFlutterVersionList(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewFlutterVersionList error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			t.Logf("got: %+v", got)
 			if len(got) != len(tt.want) {
-				t.Errorf("matchVersion() = %v, want %v", len(got), len(tt.want))
+				t.Errorf("NewFlutterVersionList = %v, want %v", len(got), len(tt.want))
 				return
 			}
 			for i, v := range got {
 				if v != tt.want[i] {
-					t.Errorf("matchVersion() = %v, want %v", v, tt.want[i])
+					t.Errorf("NewFlutterVersionList = %v, want %v", v, tt.want[i])
 				}
 			}
 		})

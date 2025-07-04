@@ -84,17 +84,99 @@ func TestFVMFeatures(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			useSetup, useInput, useAPI, err := fvmParseVersionAndFeatures(tt.input)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("matchVersion() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("fvmParseVersionAndFeatures error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if useSetup != tt.useSetupFlag {
-				t.Errorf("matchVersion() useSetup = %v, want %v", useSetup, tt.useSetupFlag)
+				t.Errorf("fvmParseVersionAndFeatures useSetup = %v, want %v", useSetup, tt.useSetupFlag)
 			}
 			if useInput != tt.useSkipInputFlag {
-				t.Errorf("matchVersion() useSkipInputFlag = %v, want %v", useInput, tt.useSkipInputFlag)
+				t.Errorf("fvmParseVersionAndFeatures useSkipInputFlag = %v, want %v", useInput, tt.useSkipInputFlag)
 			}
 			if useAPI != tt.useAPI {
-				t.Errorf("matchVersion() useAPI = %v, want %v", useAPI, tt.useAPI)
+				t.Errorf("fvmParseVersionAndFeatures useAPI = %v, want %v", useAPI, tt.useAPI)
+			}
+		})
+	}
+}
+func TestFVMVersionString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    flutterVersion
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "Version only",
+			input:    flutterVersion{version: "13.172.76", channel: ""},
+			expected: "13.172.76",
+		},
+		{
+			name:     "No input",
+			input:    flutterVersion{version: "", channel: ""},
+			expected: "stable",
+		},
+		{
+			name:     "Channel only",
+			input:    flutterVersion{version: "", channel: "dev"},
+			expected: "dev",
+		},
+		{
+			name:     "Version and channel",
+			input:    flutterVersion{version: "13.172.76", channel: "beta"},
+			expected: "13.172.76@beta",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := fvmCreateVersionString(tt.input)
+			if result != tt.expected {
+				t.Errorf("fvmCreateVersionString() got: %s expected: %s", result, tt.expected)
+				return
+			}
+		})
+	}
+}
+
+func TestASDFVersionString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    flutterVersion
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "Version only",
+			input:    flutterVersion{version: "13.172.76", channel: ""},
+			expected: "13.172.76-stable",
+		},
+		{
+			name:     "No input",
+			input:    flutterVersion{version: "", channel: ""},
+			expected: "latest",
+		},
+		{
+			name:     "Channel only",
+			input:    flutterVersion{version: "", channel: "dev"},
+			expected: "latest",
+		},
+		{
+			name:     "Version and channel",
+			input:    flutterVersion{version: "13.172.76", channel: "beta"},
+			expected: "13.172.76-beta",
+		},
+		{
+			name:     "Channel included in version",
+			input:    flutterVersion{version: "1.6.3-beta", channel: "stable"},
+			expected: "1.6.3-beta",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := asdfCreateVersionString(tt.input)
+			if result != tt.expected {
+				t.Errorf("asdfCreateVersionString() got: %s expected: %s", result, tt.expected)
+				return
 			}
 		})
 	}

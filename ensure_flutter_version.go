@@ -13,7 +13,7 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	f.Infof("Required Flutter: %s", f.NewVersionString(requiredVersion))
 
 	currentVersionString := f.NewVersionString(requiredVersion)
-	installed, currentVersion := f.compareVersionToCurrent(requiredVersion)
+	installed, currentVersion := f.compareVersionToCurrent(requiredVersion, true)
 	if installed {
 		f.Donef("Flutter %s is already installed", currentVersionString)
 		return nil
@@ -62,13 +62,23 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	return fmt.Errorf("installing Flutter %s: could not be installed or set as default", currentVersionString)
 }
 
-func (f *FlutterInstaller) compareVersionToCurrent(required flutterVersion) (bool, flutterVersion) {
+// compareVersionToCurrent compares the required version to the current version.
+// If strict is true, it checks if both version and channel match exactly (if not empty).
+func (f *FlutterInstaller) compareVersionToCurrent(required flutterVersion, strict bool) (bool, flutterVersion) {
 	currentVersion, err := f.NewFlutterVersionFromCurrent()
 	if err != nil {
 		f.Debugf("get current Flutter version: %s", err)
-	} else if (required.version == "" || currentVersion.version == required.version) &&
-		(required.channel == "" || currentVersion.channel == required.channel) {
-		return true, currentVersion
+	} else if strict {
+		if (required.version == "" || currentVersion.version == required.version) &&
+			(required.channel == "" || currentVersion.channel == required.channel) {
+			return true, currentVersion
+		}
+	} else {
+		if required.version != "" && currentVersion.version == required.version {
+			return true, currentVersion
+		} else if required.channel != "" && currentVersion.channel == required.channel {
+			return true, currentVersion
+		}
 	}
 	return false, currentVersion
 }
@@ -157,14 +167,14 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 	if err := installType.Install(required); err != nil {
 		return fmt.Errorf("install: %s", err)
 	} else if err := f.ensureSetupFinished(); err != nil {
-		return fmt.Errorf("ensure setup is finished: %w", err)
+		f.Debugf("ensure setup is finished: %s", err)
 	}
 
 	if installType.SetDefault != nil {
 		if err := installType.SetDefault(required); err != nil {
 			return fmt.Errorf("set version default: %s", err)
 		} else if err := f.ensureSetupFinished(); err != nil {
-			return fmt.Errorf("ensure setup is finished: %w", err)
+			f.Debugf("ensure setup is finished: %s", err)
 		}
 	}
 
@@ -173,7 +183,7 @@ func (f *FlutterInstaller) installAndSetDefault(installType *FlutterInstallType,
 		channel:     required.channel,
 		installType: installType.Name,
 	}
-	if installed, _ := f.compareVersionToCurrent(requiredTrimmed); installed {
+	if installed, _ := f.compareVersionToCurrent(requiredTrimmed, false); installed {
 		return nil
 	} else {
 		listCmd := *installType.InstalledVersionsCommand()
@@ -196,7 +206,7 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 		if err := installType.SetDefault(required); err != nil {
 			return fmt.Errorf("set version default: %s", err)
 		} else if err := f.ensureSetupFinished(); err != nil {
-			return fmt.Errorf("ensure setup is finished: %w", err)
+			f.Debugf("ensure setup is finished: %s", err)
 		}
 	}
 
@@ -205,7 +215,7 @@ func (f *FlutterInstaller) setDefaultIfInstalled(installType *FlutterInstallType
 		channel:     required.channel,
 		installType: installType.Name,
 	}
-	if installed, _ := f.compareVersionToCurrent(requiredTrimmed); installed {
+	if installed, _ := f.compareVersionToCurrent(requiredTrimmed, true); installed {
 		return nil
 	} else {
 		return fmt.Errorf("version does not match required version after setting it default with %s", installType.Name)

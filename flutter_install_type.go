@@ -226,7 +226,7 @@ func asdfCreateVersionString(version flutterVersion) string {
 			if version.channel != "" {
 				versionString += "-" + version.channel
 			} else {
-				versionString = "stable" // default to stable if no version is specified
+				versionString += "-stable" // default to stable if no version is specified
 			}
 		}
 

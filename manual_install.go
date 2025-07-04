@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -16,9 +15,13 @@ import (
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 )
 
+// DownloadFlutterSDK downloads the Flutter SDK from the specified version or channel.
+//
+// It checks if the version is specified in the input or required parameters.
+// If input is a valid URL, it downloads and unarchives the Flutter SDK bundle.
 func (f *FlutterInstaller) DownloadFlutterSDK(required flutterVersion) error {
 	if required.version == "" && required.channel == "" && f.Input.Version == "" {
-		return fmt.Errorf("input: 'Flutter SDK git repository version' (version) is not")
+		return fmt.Errorf("input: 'Flutter SDK git repository version' (version) is not specified")
 	}
 
 	f.Infof("Downloading Flutter SDK")
@@ -84,25 +87,27 @@ func (f *FlutterInstaller) DownloadFlutterSDK(required flutterVersion) error {
 	f.Donef("Added to $PATH")
 	f.Debugf("PATH: %s", os.Getenv("PATH"))
 
-	if f.Input.IsDebug {
-		flutterBinPath, err := exec.LookPath("flutter")
-		if err != nil {
-			return fmt.Errorf("get Flutter binary path")
-		}
-		f.Infof("Flutter binary path: %s", flutterBinPath)
-
-		cmdOpts := command.Opts{
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
-		}
-		treeCmd := f.CmdFactory.Create("tree", []string{"-L", "3", sdkPathParent}, &cmdOpts)
-		f.Donef("$ %s", treeCmd.PrintableCommandArgs())
-		if err := treeCmd.Run(); err != nil {
-			f.Warnf("run tree command: %s", err)
-		}
-
-		f.printDirOwner(flutterSDKPath)
+	if !f.Input.IsDebug {
+		return nil
 	}
+
+	flutterBinPath, err := exec.LookPath("flutter")
+	if err != nil {
+		return fmt.Errorf("get Flutter binary path")
+	}
+	f.Infof("Flutter binary path: %s", flutterBinPath)
+
+	cmdOpts := command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+	treeCmd := f.CmdFactory.Create("tree", []string{"-L", "3", sdkPathParent}, &cmdOpts)
+	f.Donef("$ %s", treeCmd.PrintableCommandArgs())
+	if err := treeCmd.Run(); err != nil {
+		f.Warnf("run tree command: %s", err)
+	}
+
+	f.printDirOwner(flutterSDKPath)
 
 	return nil
 }
@@ -135,9 +140,9 @@ func (f *FlutterInstaller) downloadAndUnarchiveBundle(bundleURL, targetDir strin
 	return nil
 }
 
-/*
-Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
-*/
+// validateFlutterURL checks if the provided URL is a valid Flutter SDK bundle URL.
+//
+// Expecting URL similar to: https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip
 func validateFlutterURL(bundleURL string) error {
 	flutterURL, err := url.Parse(bundleURL)
 	if err != nil {
@@ -155,21 +160,17 @@ func validateFlutterURL(bundleURL string) error {
 
 	const sep = "/"
 	pathParts := strings.Split(strings.TrimLeft(flutterURL.EscapedPath(), sep), sep)
-	foundMatch := false
 	flutterPaths := []string{"flutter_infra", "flutter_infra_release"}
 	if len(pathParts) > 0 {
 		path := pathParts[0]
 		for _, validPath := range flutterPaths {
 			if validPath == path {
-				foundMatch = true
-				break
+				return nil
 			}
 		}
 	}
-	if !foundMatch {
-		return fmt.Errorf("invalid path, expecting it to begin with one of: %v", flutterPaths)
-	}
-	return nil
+
+	return fmt.Errorf("invalid path, expecting it to begin with one of: %v", flutterPaths)
 }
 
 func (f *FlutterInstaller) downloadBundle(bundleURL string) (string, error) {
@@ -220,11 +221,7 @@ func (f *FlutterInstaller) unarchiveBundle(tarPth, targetDir string) error {
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(out)
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return fmt.Errorf("tar command failed: %s, out: %s", err, out)
-		}
-		return fmt.Errorf("run tar command: %s", err)
+		return fmt.Errorf("tar command: %s %s", err, out)
 	}
 
 	return nil

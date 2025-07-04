@@ -33,7 +33,7 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: test install with no input
+        title: test install with no version input
         inputs:
         - is_debug: "true"
 
@@ -98,7 +98,7 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: install version from dev channel
+        title: specified version and channel
         inputs:
         - version: 2.11.0-0.1.pre dev
         - is_debug: "true"
@@ -111,7 +111,7 @@ workflows:
     steps:
     - path::./:
         run_if: "true"
-        title: install specific version with channel
+        title: install specific channel
         inputs:
         - version: dev
         - is_debug: "true"

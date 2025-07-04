@@ -100,6 +100,7 @@ func (f *FlutterInstaller) hasRelease(installType *FlutterInstallType, required 
 
 	return false, fmt.Errorf("no releases listing command defined for tool %s", installType.Name)
 }
+
 func (f *FlutterInstaller) hasInstalled(installType *FlutterInstallType, required flutterVersion) (bool, error) {
 	if installType.InstalledVersionsCommand != nil {
 		installsCmd := *installType.InstalledVersionsCommand()

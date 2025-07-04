@@ -99,6 +99,7 @@ func Test_fvmParseVersionAndFeatures(t *testing.T) {
 		})
 	}
 }
+
 func Test_fvmCreateVersionString(t *testing.T) {
 	tests := []struct {
 		name     string

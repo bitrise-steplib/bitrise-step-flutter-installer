@@ -22,7 +22,6 @@ type FlutterInstallType struct {
 	ReleasesCommand          func(version flutterVersion) *command.Command // command to list available releases (if applicable)
 	Install                  func(version flutterVersion) error            // function to install a specific version
 	SetDefault               func(version flutterVersion) error            // function to set a specific version as default (if applicable)
-	FullInstall              func() error                                  // function to perform a full install, if needed
 }
 
 func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
@@ -35,6 +34,8 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			Name:        FVMName,
 			IsAvailable: false,
 		}
+	} else {
+		f.Debugf("fvm --version output: %s", versionOut)
 	}
 
 	after3_0_0, after3_1_0, after3_2_1, err := fvmParseVersionAndFeatures(versionOut)
@@ -81,7 +82,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 			return nil
 		},
 		SetDefault: func(version flutterVersion) error {
-			args := append([]string{"global", fvmCreateVersionString(version)}, defaultArgs...)
+			args := append([]string{"global", fvmCreateVersionString(version), "--force"}, defaultArgs...)
 
 			cmd := f.CmdFactory.Create("fvm", args, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())

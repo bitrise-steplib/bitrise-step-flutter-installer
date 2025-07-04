@@ -10,9 +10,12 @@ import (
 )
 
 const (
-	FVMName    = "fvm"
-	ASDFName   = "asdf"
-	ManualName = "manual"
+	FVMName              = "fvm"
+	ASDFName             = "asdf"
+	ManualName           = "manual"
+	FVMCacheVersionsPath = "/fvm/versions"
+	FVMCacheDefaultPath  = "/fvm/default/bin/flutter"
+	ASDFShimsPath        = "/.asdf/shims/flutter"
 )
 
 type FlutterInstallType struct {
@@ -72,7 +75,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 				return fmt.Errorf("install: %s %s", err, out)
 			} else {
 				f.Debugf("Installed Flutter: %s", out)
-				cachePath := fmt.Sprintf("%s/fvm/default/bin/flutter", os.Getenv("HOME"))
+				cachePath := os.Getenv("HOME") + FVMCacheDefaultPath
 				path := os.Getenv("PATH")
 				if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", cachePath, path)); err != nil {
 					return fmt.Errorf("set env: %s", err)
@@ -83,11 +86,36 @@ func (f *FlutterInstaller) NewFlutterInstallTypeFVM() FlutterInstallType {
 		},
 		SetDefault: func(version flutterVersion) error {
 			args := append([]string{"global", fvmCreateVersionString(version), "--force"}, defaultArgs...)
-
 			cmd := f.CmdFactory.Create("fvm", args, nil)
 			f.Donef("$ %s", cmd.PrintableCommandArgs())
 			if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-				return fmt.Errorf("set version default: %s %s", err, out)
+				f.Debugf("Failed to set default version with fvm: %s %s", err, out)
+				f.Warnf("Flutter version %s already exists in FVM cache, setting as default manually.", fvmCreateVersionString(version))
+
+				home := os.Getenv("HOME")
+				versionsDir := home + FVMCacheVersionsPath
+				versionDir := versionsDir + "/" + fvmCreateVersionString(version)
+				binFlutter := versionDir + "/bin/flutter"
+
+				info, statErr := os.Stat(versionDir)
+				if statErr != nil || !info.IsDir() {
+					return fmt.Errorf("version directory does not exist: %s", versionDir)
+				}
+				entries, readErr := os.ReadDir(versionDir)
+				if readErr != nil || len(entries) == 0 {
+					return fmt.Errorf("version directory is empty: %s", versionDir)
+				}
+
+				// Set the symlink
+				defaultBin := home + FVMCacheDefaultPath
+				if err := os.Remove(defaultBin); err != nil {
+					f.Debugf("Failed to remove existing default symlink: %s", err)
+				}
+				linkErr := os.Symlink(binFlutter, defaultBin)
+				if linkErr != nil {
+					return fmt.Errorf("failed to set default symlink: %w", linkErr)
+				}
+				f.Debugf("Set default Flutter to %s manually", binFlutter)
 			}
 			return nil
 		},
@@ -175,7 +203,7 @@ func (f *FlutterInstaller) NewFlutterInstallTypeASDF() FlutterInstallType {
 				return fmt.Errorf("install: %s %s", err, out)
 			} else {
 				f.Debugf("Installed Flutter: %s", out)
-				shimsPath := fmt.Sprintf("%s/.asdf/shims/flutter", os.Getenv("HOME"))
+				shimsPath := os.Getenv("HOME") + ASDFShimsPath
 				path := os.Getenv("PATH")
 				if err := os.Setenv("PATH", fmt.Sprintf("%s:%s", shimsPath, path)); err != nil {
 					return fmt.Errorf("set env: %s", err)

@@ -339,32 +339,48 @@ func parseProjectConfigFiles() (flutterVersion, error) {
 	stepTracker.LogSDKVersions(sdkVersions)
 	defer stepTracker.Wait()
 
-	if sdkVersions.PubspecFlutterVersion != nil {
-		return flutterVersion{
-			version: sdkVersions.PubspecFlutterVersion.String(),
-		}, nil
-	}
+	versionRegexp := regexp.MustCompile(flutterVersionRegexp)
 
-	if sdkVersions.FVMFlutterVersion != nil {
-		var channel string
-		if sdkVersions.FVMFlutterChannel != "" {
-			channel = sdkVersions.FVMFlutterChannel
+	if fvmVersion := sdkVersions.FVMFlutterVersion; fvmVersion != nil {
+		fvmVersionString := fvmVersion.String()
+		channel := sdkVersions.FVMFlutterChannel
+		if (fvmVersionString != "" && versionRegexp.MatchString(fvmVersionString)) ||
+			channel != "" {
+			return flutterVersion{
+				version:     fvmVersion.String(),
+				channel:     channel,
+				installType: FVMName,
+			}, nil
 		}
-		return flutterVersion{
-			version: sdkVersions.FVMFlutterVersion.String(),
-			channel: channel,
-		}, nil
 	}
 
 	if sdkVersions.ASDFFlutterVersion != nil {
-		var channel string
-		if sdkVersions.ASDFFlutterChannel != "" {
-			channel = sdkVersions.ASDFFlutterChannel
+		asdfVersionString := sdkVersions.ASDFFlutterVersion.String()
+		channel := sdkVersions.ASDFFlutterChannel
+		if (asdfVersionString != "" && versionRegexp.MatchString(asdfVersionString)) ||
+			channel != "" {
+			return flutterVersion{
+				version:     sdkVersions.ASDFFlutterVersion.String(),
+				channel:     channel,
+				installType: ASDFName,
+			}, nil
 		}
-		return flutterVersion{
-			version: sdkVersions.ASDFFlutterVersion.String(),
-			channel: channel,
-		}, nil
+	}
+
+	if pubLock := sdkVersions.PubspecLockFlutterVersion; pubLock != nil {
+		if version := pubLock.String(); version != "" && versionRegexp.MatchString(version) {
+			return flutterVersion{
+				version: version,
+			}, nil
+		}
+	}
+
+	if pubSpec := sdkVersions.PubspecFlutterVersion; pubSpec != nil {
+		if version := pubSpec.String(); version != "" && versionRegexp.MatchString(version) {
+			return flutterVersion{
+				version: sdkVersions.PubspecFlutterVersion.String(),
+			}, nil
+		}
 	}
 
 	return flutterVersion{}, fmt.Errorf("no Flutter version found in the project files")

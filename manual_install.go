@@ -219,7 +219,6 @@ func (f *FlutterInstaller) unarchiveBundle(tarPth, targetDir string) error {
 
 	f.Donef("$ %s", tarCmd.PrintableCommandArgs())
 	out, err := tarCmd.RunAndReturnTrimmedCombinedOutput()
-	fmt.Println(out)
 	if err != nil {
 		return fmt.Errorf("tar command: %s %s", err, out)
 	}

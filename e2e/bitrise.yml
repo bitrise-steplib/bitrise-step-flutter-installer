@@ -1,34 +1,69 @@
+---
 format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  test_git_default:
+  test_preinstalled_version:
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: test preinstalled version
+        inputs:
+        - is_debug: "true"
+        - version: 3.16.8
+
+  test_preinstalled_version2:
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: test preinstalled version 2
+        inputs:
+        - is_debug: "true"
+        - version: 3.22.0
+
+  test_clean_install_no_version_input:
     before_run:
     - _remove_flutter
     after_run:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
-        title: git install default
+        run_if: "true"
+        title: test install with no version input
         inputs:
         - is_debug: "true"
 
-  test_git_default_force_update:
+  test_clean_install_stable:
     before_run:
     - _remove_flutter
     after_run:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
-        title: git install stable force update
+        run_if: "true"
+        title: test install stable version
         inputs:
         - version: stable
-        - is_update: "true"
         - is_debug: "true"
 
-  test_bundle:
+  test_clean_install_specific_version:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: install specific version
+        inputs:
+        - version: 3.32.5
+        - is_debug: "true"
+
+  test_clean_install_bundle:
     before_run:
     - _remove_flutter
     after_run:
@@ -49,36 +84,47 @@ workflows:
             fi
             envman add --key "BUNDLE_URL" --value "${URL}"
     - path::./:
-        run_if: true
+        run_if: "true"
         title: platform specific bundle install
         inputs:
-        - installation_bundle_url: $BUNDLE_URL
-          opts:
-            is_expand: true
+        - version: $BUNDLE_URL
         - is_debug: "true"
 
-  test_git_branch:
+  test_clean_install_dev:
     before_run:
     - _remove_flutter
     after_run:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
-        title: git install dev
+        run_if: "true"
+        title: specified version and channel
+        inputs:
+        - version: 2.11.0-0.1.pre dev
+        - is_debug: "true"
+
+  test_clean_install_version_with_channel:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - path::./:
+        run_if: "true"
+        title: install specific channel
         inputs:
         - version: dev
         - is_debug: "true"
 
-  test_git_tag:
+  test_clean_install_legacy_version:
     before_run:
     - _remove_flutter
     after_run:
     - _test_flutter_installation
     steps:
     - path::./:
-        run_if: true
-        title: git install specific version
+        run_if: "true"
+        title: install legacy version
         inputs:
         - version: v1.7.1
         - is_debug: "true"
@@ -91,38 +137,64 @@ workflows:
             #!/bin/env bash
             set -x
 
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "1" ]; then
-              echo "flutter not installed"
-              exit 0
-            fi
-
-            set -e
-
-            flutter_bin_dir="$(dirname "$flutter_bin_path")"
-            flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
-
-            echo "cleanup flutter sdk: $flutter_sdk_dir"
-
-            set +e
-
-            rm -rf "$flutter_sdk_dir"
-
-            if [ $? == "1" ]; then
-              echo "flutter sdk cleanup failed, trying with sudo"
-
-              sudo rm -rf "$flutter_sdk_dir"
-
-              if [ $? == "1" ]; then
-                echo "flutter sdk cleanup failed"
+            # fvm
+            if command -v fvm >/dev/null 2>&1; then
+              yes | fvm remove --all || true
+              if fvm list | grep -q '0 B'; then
+                echo "ERROR: FVM still has Flutter versions installed after removal."
+                fvm list
                 exit 1
               fi
             fi
 
-            flutter_bin_path="$(which flutter)"
-            if [ $? == "0" ]; then
-              echo "flutter sdk cleanup failed"
-              exit 1
+            # asdf
+            if command -v asdf >/dev/null 2>&1; then
+              # Remove flutter from .tool-versions to unset global version
+              sed -i.bak '/^flutter /d' ~/.tool-versions || true
+              asdf list flutter | sed 's/^[* ]*//' | xargs -n1 asdf uninstall flutter || true
+              if asdf list flutter | grep -q .; then
+                echo "ERROR: asdf still has Flutter versions installed after uninstall."
+                asdf list flutter
+                exit 1
+              fi
+            fi
+
+            if command -v flutter >/dev/null 2>&1; then
+              flutter_bin_path="$(which flutter)"
+              # If managed by fvm or asdf, skip SDK removal but do not exit
+              if [[ "$flutter_bin_path" == *"asdf"* ]] || \
+                [[ "$flutter_bin_path" == *"fvm"* ]]; then
+                echo "flutter is managed by a version manager at $flutter_bin_path, skipping SDK removal"
+              else
+                # remove the SDK directory
+                set -e
+                flutter_bin_dir="$(dirname "$flutter_bin_path")"
+                flutter_sdk_dir="$(dirname "$flutter_bin_dir")"
+                echo "Cleaning up flutter sdk: $flutter_sdk_dir"
+                set +e
+                rm -rf "$flutter_sdk_dir"
+                if [ $? != 0 ]; then
+                  echo "flutter sdk cleanup failed, trying with sudo"
+                  sudo rm -rf "$flutter_sdk_dir"
+                  if [ $? != 0 ]; then
+                    echo "flutter sdk cleanup failed"
+                    exit 1
+                  fi
+                fi
+              fi
+
+              # Remove flutter from PATH for current session
+              echo "Removing flutter from PATH"
+              echo "Current PATH: $PATH"
+              export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v "$(dirname "$flutter_bin_path")" | paste -sd: -)"
+              hash -r
+              echo "Updated PATH: $PATH"
+
+              # Final check
+              if command -v flutter >/dev/null 2>&1; then
+                echo "flutter still on PATH after removal attempt"
+                exit 1
+              fi
             fi
 
   _test_flutter_installation:

@@ -1,3 +1,4 @@
+---
 title: Flutter Install
 summary: Install Flutter SDK.
 description: |-
@@ -63,35 +64,6 @@ inputs:
       To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
     is_required: false
 
-- is_update: "true"
-  opts:
-    title: Update to the latest version
-    summary: Set to true to update, if Flutter from a matching channel is preinstalled.
-    description: |-
-      If the version selected is `stable` and a preinstalled Flutter version from the `stable` channel with version 1.2.1 exists:
-      * Setting to `false` will not update, even if a later release exists.
-      * Setting to `true` will update Flutter to the latest version released in the channel.
-    value_options:
-    - "false"
-    - "true"
-
-- installation_bundle_url: ""
-  opts:
-    title: Flutter SDK installation bundle URL
-    summary: Install from bundle. Prefer this input (for other than stable channel), as it is faster than cloning from git.
-    description: |-
-      Installation bundle URL. If specified, Flutter will be installed from here and git repository version is ignored.
-
-      For a channel other than stable (e.g. beta), it is recommended to use this input. It is faster than cloning from git.
-
-      Official list of Flutter installation bundles: [https://flutter.dev/docs/development/tools/sdk/releases](https://flutter.dev/docs/development/tools/sdk/releases)
-
-      The URL is expected to begin with: `https://storage.googleapis.com/flutter_infra`
-
-      Example value (beta channel, version 1.6.3, macOS): `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip`
-
-    is_required: false
-
 - is_debug: "false"
   opts:
     category: Debug
@@ -101,3 +73,4 @@ inputs:
     value_options:
     - "false"
     - "true"
+    is_required: false

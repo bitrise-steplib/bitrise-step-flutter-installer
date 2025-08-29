@@ -169,7 +169,7 @@ func (f *FlutterInstaller) fvmIsAvailable() (bool, string) {
 	}
 	f.Debugf("fvm version: %s", versionOut)
 
-	return true, ""
+	return true, versionOut
 }
 
 // fvmParseVersionAndFeatures parses the FVM version output and determines if it supports features introduced in specific versions.

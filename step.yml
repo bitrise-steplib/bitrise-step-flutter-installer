@@ -2,16 +2,15 @@
 title: Flutter Install
 summary: Install Flutter SDK.
 description: |-
-  This Step git clones the selected branch or tag of the official Flutter repository and runs the initial setup of the Flutter SDK.
+  This Step installs the Flutter SDK using FVM, ASDF, or manual installation methods and runs the initial setup.
   Use this step *before* the cache-pull step to make sure caching works correctly.
 
   ### Configuring the Step
-  1. In the **Flutter SDK git repository version** input set the tag or branch of the Flutter. The default value is `stable` which clones and installs the latest stable Flutter branch.
-  2. In the **Update to the latest version** input select `false` to use a preinstalled Flutter version or `true` to update Flutter SDK to the latest version released in the [build release channel](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels). By default, this input is set to `true`.
-  4. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
+  1. In the **Flutter SDK version or bundle URL** input set the version, tag, branch, or bundle URL. The default value is `stable`.
+  2. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
 
   ### Troubleshooting
-  If you prefer to install Flutter from an installation bundle instead of the git repository, use the **Flutter SDK installation bundle URL** input. Insert the URL of the preferred [bundle](https://flutter.dev/docs/development/tools/sdk/releases), for example, `https://storage.googleapis.com/flutter_infra/releases/dev/windows/flutter_windows_v1.14.5-dev.zip`. If the input is filled out correctly, it overrides the value set in the **Flutter SDK git repository version** input.
+  If you prefer to install Flutter from an installation bundle instead of the git repository, provide a Flutter SDK bundle URL in the **Flutter SDK version or bundle URL** input. For example, `https://storage.googleapis.com/flutter_infra/releases/dev/windows/flutter_windows_v1.14.5-dev.zip`. When a valid bundle URL is provided, it will download and install from that bundle instead of cloning from git.
 
   ### Useful links
   - [About Flutter build release channels](https://github.com/flutter/flutter/wiki/Flutter-build-release-channels)
@@ -50,18 +49,25 @@ toolkit:
 inputs:
 - version: stable
   opts:
-    title: Flutter SDK git repository version
-    summary: Install from git. The tag or branch of the Flutter SDK's git repository.
+    title: Flutter SDK version or bundle URL
+    summary: Install from git repository (tag/branch) or from a Flutter SDK bundle URL.
     description: |-
-      Use this input to install from the git repository by specifying a tag or branch.
+      Specify the Flutter version using a tag, branch, channel name, or Flutter SDK bundle URL.
 
-      Use this input for the stable channel, as the stable channel can be preinstalled.
+      **Installation priority:**
+      1. Use FVM/ASDF if available and has the version installed
+      2. Install via FVM/ASDF if version is available in their releases
+      3. Manual installation: download from bundle URL or clone from git repository
 
-      If the input Flutter SDK installation bundle URL is specified, this input is ignored.
+      **Examples:**
+      - Channels: `stable`, `beta`, `dev`
+      - Versions: `3.32.5`, `v1.6.3-beta`
+      - Bundle URL: `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip`
 
-      To find the available version tags see this list: [https://github.com/flutter/flutter/releases](https://github.com/flutter/flutter/releases)
-
-      To see the the avilable branches visit: [https://github.com/flutter/flutter/branches](https://github.com/flutter/flutter/branches)
+      **Resources:**
+      - [Version tags](https://github.com/flutter/flutter/releases)
+      - [Branches](https://github.com/flutter/flutter/branches)
+      - [Bundle URLs](https://flutter.dev/docs/development/tools/sdk/releases)
     is_required: false
 
 - is_debug: "false"

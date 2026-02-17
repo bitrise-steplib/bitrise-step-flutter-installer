@@ -220,17 +220,17 @@ func Test_NewFlutterVersion(t *testing.T) {
 		{
 			name:  "normal case",
 			input: versionMachineOut,
-			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", installType: FVMName},
+			want:  flutterVersion{version: "3.33.0-0.2.pre", channel: "beta", dartVersion: "3.9.0 (build 3.9.0-100.2.beta)", installType: FVMName},
 		},
 		{
 			name:  "incomplete version",
 			input: versionMachineOutIncomplete,
-			want:  flutterVersion{version: "1.6.3", channel: "beta"},
+			want:  flutterVersion{version: "1.6.3", channel: "beta", dartVersion: "2.3.2 (build 2.3.2-dev.0.0 e3edfd36b2)"},
 		},
 		{
 			name:  "unknown channel",
 			input: versionMachineOutUnknownChannel,
-			want:  flutterVersion{version: "2.11.0-0.1.pre"},
+			want:  flutterVersion{version: "2.11.0-0.1.pre", dartVersion: "2.17.0 (build 2.17.0-69.2.beta)"},
 		},
 		{
 			name:  "build flutter",
@@ -319,6 +319,7 @@ func Test_NewFlutterVersionList(t *testing.T) {
 				{
 					version:     "3.32.5",
 					channel:     "stable",
+					dartVersion: "3.8.1",
 					installType: FVMName,
 				},
 				{
@@ -329,11 +330,13 @@ func Test_NewFlutterVersionList(t *testing.T) {
 				{
 					version:     "3.33.0-0.2.pre",
 					channel:     "",
+					dartVersion: "3.9.0-100.2.beta",
 					installType: FVMName,
 				},
 				{
 					version:     "3.32.0",
 					channel:     "stable",
+					dartVersion: "3.8.0",
 					installType: FVMName,
 				},
 				{

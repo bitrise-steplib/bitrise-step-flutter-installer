@@ -28,8 +28,9 @@ var Channels = []string{
 const flutterVersionRegexp = `v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`
 
 type flutterVersion struct {
-	version string
-	channel string
+	version     string
+	channel     string
+	dartVersion string
 	// installType indicates the tool used to install the Flutter version, e.g., "fvm", "asdf" parsed from version output.
 	installType string
 }
@@ -229,9 +230,16 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 		installType = it
 	}
 
+	// Extract Dart SDK version if present
+	dartVersion := ""
+	if dv, ok := data["dartSdkVersion"].(string); ok {
+		dartVersion = strings.TrimSpace(dv)
+	}
+
 	return flutterVersion{
 		version:     version,
 		channel:     channel,
+		dartVersion: dartVersion,
 		installType: installType,
 	}, nil
 }

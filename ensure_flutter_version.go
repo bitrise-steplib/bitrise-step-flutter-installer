@@ -93,18 +93,23 @@ func (f *FlutterInstaller) resolveVersionFromConstraints(required flutterVersion
 
 	// Collect constraints from pubspec.lock (preferred) or pubspec.yaml
 	var flutterConstraint *semver.Constraints
-	var dartConstraint *semver.Constraints
-
-	if v := sdkVersions.PubspecLockFlutterVersion; v != nil && v.Constraint != nil {
-		flutterConstraint = v.Constraint
-	} else if v := sdkVersions.PubspecFlutterVersion; v != nil && v.Constraint != nil {
-		flutterConstraint = v.Constraint
+	if v := sdkVersions.PubspecLockFlutterVersion; v != nil {
+		flutterConstraint = toConstraint(v.Version, v.Constraint)
+	}
+	if flutterConstraint == nil {
+		if v := sdkVersions.PubspecFlutterVersion; v != nil {
+			flutterConstraint = toConstraint(v.Version, v.Constraint)
+		}
 	}
 
-	if v := sdkVersions.PubspecLockDartVersion; v != nil && v.Constraint != nil {
-		dartConstraint = v.Constraint
-	} else if v := sdkVersions.PubspecDartVersion; v != nil && v.Constraint != nil {
-		dartConstraint = v.Constraint
+	var dartConstraint *semver.Constraints
+	if v := sdkVersions.PubspecLockDartVersion; v != nil {
+		dartConstraint = toConstraint(v.Version, v.Constraint)
+	}
+	if dartConstraint == nil {
+		if v := sdkVersions.PubspecDartVersion; v != nil {
+			dartConstraint = toConstraint(v.Version, v.Constraint)
+		}
 	}
 
 	// No constraints in project files → channel-only is fine

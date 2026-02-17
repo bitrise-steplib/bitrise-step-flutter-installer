@@ -404,6 +404,20 @@ func cleanDartVersion(dartVersionStr string) string {
 	return dartVersionStr
 }
 
+// toConstraint converts a semver version or constraint into a unified *semver.Constraints.
+// If a range constraint is provided, it is returned as-is.
+// If an exact version is provided, it is converted to an equality constraint (e.g. "3.7.2" → "= 3.7.2").
+func toConstraint(version *semver.Version, constraint *semver.Constraints) *semver.Constraints {
+	if constraint != nil {
+		return constraint
+	}
+	if version != nil {
+		c, _ := semver.NewConstraint(version.String())
+		return c
+	}
+	return nil
+}
+
 // versionSatisfiesConstraint checks if a version string satisfies a semver constraint.
 // Returns true if the constraint is nil, the version is empty, or the version cannot be parsed
 // (in those cases we cannot determine incompatibility, so we assume it's fine).

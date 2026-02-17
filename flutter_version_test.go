@@ -601,3 +601,84 @@ func Test_versionSatisfiesConstraint(t *testing.T) {
 		})
 	}
 }
+
+func Test_toConstraint(t *testing.T) {
+	mustVersion := func(s string) *semver.Version {
+		v, err := semver.NewVersion(s)
+		if err != nil {
+			t.Fatalf("invalid version %q: %s", s, err)
+		}
+		return v
+	}
+
+	mustConstraint := func(s string) *semver.Constraints {
+		c, err := semver.NewConstraint(s)
+		if err != nil {
+			t.Fatalf("invalid constraint %q: %s", s, err)
+		}
+		return c
+	}
+
+	tests := []struct {
+		name       string
+		version    *semver.Version
+		constraint *semver.Constraints
+		wantNil    bool
+		checkVer   string // version to check against the result
+		checkWant  bool   // expected result of Check
+	}{
+		{
+			name:    "both nil",
+			wantNil: true,
+		},
+		{
+			name:       "constraint takes priority over version",
+			version:    mustVersion("3.7.2"),
+			constraint: mustConstraint("^3.7.0"),
+			checkVer:   "3.8.0",
+			checkWant:  true,
+		},
+		{
+			name:      "exact version becomes equality constraint - match",
+			version:   mustVersion("3.7.2"),
+			checkVer:  "3.7.2",
+			checkWant: true,
+		},
+		{
+			name:      "exact version becomes equality constraint - no match",
+			version:   mustVersion("3.7.2"),
+			checkVer:  "3.8.0",
+			checkWant: false,
+		},
+		{
+			name:       "range constraint passed through",
+			constraint: mustConstraint(">= 3.4.0, < 4.0.0"),
+			checkVer:   "3.5.0",
+			checkWant:  true,
+		},
+		{
+			name:       "range constraint - out of range",
+			constraint: mustConstraint(">= 3.4.0, < 4.0.0"),
+			checkVer:   "4.1.0",
+			checkWant:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := toConstraint(tt.version, tt.constraint)
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("toConstraint() = %v, want nil", got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatal("toConstraint() = nil, want non-nil")
+			}
+			v := mustVersion(tt.checkVer)
+			if result := got.Check(v); result != tt.checkWant {
+				t.Errorf("toConstraint().Check(%q) = %v, want %v", tt.checkVer, result, tt.checkWant)
+			}
+		})
+	}
+}

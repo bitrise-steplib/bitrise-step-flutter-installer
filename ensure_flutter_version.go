@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -125,8 +126,13 @@ func (f *FlutterInstaller) resolveVersionFromConstraints(required flutterVersion
 		}
 
 		if currentSatisfies && dartConstraint != nil && currentVersion.dartVersion != "" {
-			if v, err := semver.NewVersion(currentVersion.dartVersion); err == nil && !dartConstraint.Check(v) {
-				f.Debugf("Current Dart %s does not satisfy constraint %s", currentVersion.dartVersion, dartConstraint)
+			dartVersionStr := currentVersion.dartVersion
+			// Handle "3.9.0 (build 3.9.0-100.2.beta)" format
+			if matches := regexp.MustCompile(`(.+) \(build (.+)\)`).FindStringSubmatch(dartVersionStr); len(matches) == 3 {
+				dartVersionStr = matches[1]
+			}
+			if v, err := semver.NewVersion(dartVersionStr); err == nil && !dartConstraint.Check(v) {
+				f.Debugf("Current Dart %s does not satisfy constraint %s", dartVersionStr, dartConstraint)
 				currentSatisfies = false
 			}
 		}

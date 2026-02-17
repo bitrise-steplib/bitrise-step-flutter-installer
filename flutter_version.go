@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/bitrise-io/go-flutter/flutterproject"
 	"github.com/bitrise-io/go-flutter/fluttersdk"
 	"github.com/bitrise-io/go-utils/v2/env"
@@ -392,4 +393,27 @@ func parseProjectConfigFiles() (flutterVersion, error) {
 	}
 
 	return flutterVersion{}, fmt.Errorf("no Flutter version found in the project files")
+}
+
+// cleanDartVersion removes the "(build ...)" suffix from Dart version strings.
+// For example, "3.9.0 (build 3.9.0-100.2.beta)" becomes "3.9.0".
+func cleanDartVersion(dartVersionStr string) string {
+	if matches := regexp.MustCompile(`^(.+?) \(build .+\)$`).FindStringSubmatch(dartVersionStr); len(matches) == 2 {
+		return matches[1]
+	}
+	return dartVersionStr
+}
+
+// versionSatisfiesConstraint checks if a version string satisfies a semver constraint.
+// Returns true if the constraint is nil, the version is empty, or the version cannot be parsed
+// (in those cases we cannot determine incompatibility, so we assume it's fine).
+func versionSatisfiesConstraint(versionStr string, constraint *semver.Constraints) bool {
+	if constraint == nil || versionStr == "" {
+		return true
+	}
+	v, err := semver.NewVersion(versionStr)
+	if err != nil {
+		return true
+	}
+	return constraint.Check(v)
 }

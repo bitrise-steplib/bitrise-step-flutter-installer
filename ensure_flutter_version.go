@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -116,28 +115,17 @@ func (f *FlutterInstaller) resolveVersionFromConstraints(required flutterVersion
 	// Check if current version satisfies constraints
 	currentVersion, err := f.NewFlutterVersionFromCurrent()
 	if err == nil {
-		currentSatisfies := true
-
-		if flutterConstraint != nil && currentVersion.version != "" {
-			if v, err := semver.NewVersion(currentVersion.version); err == nil && !flutterConstraint.Check(v) {
-				f.Debugf("Current Flutter %s does not satisfy constraint %s", currentVersion.version, flutterConstraint)
-				currentSatisfies = false
-			}
+		flutterOK := versionSatisfiesConstraint(currentVersion.version, flutterConstraint)
+		if !flutterOK {
+			f.Debugf("Current Flutter %s does not satisfy constraint %s", currentVersion.version, flutterConstraint)
 		}
 
-		if currentSatisfies && dartConstraint != nil && currentVersion.dartVersion != "" {
-			dartVersionStr := currentVersion.dartVersion
-			// Handle "3.9.0 (build 3.9.0-100.2.beta)" format
-			if matches := regexp.MustCompile(`(.+) \(build (.+)\)`).FindStringSubmatch(dartVersionStr); len(matches) == 3 {
-				dartVersionStr = matches[1]
-			}
-			if v, err := semver.NewVersion(dartVersionStr); err == nil && !dartConstraint.Check(v) {
-				f.Debugf("Current Dart %s does not satisfy constraint %s", dartVersionStr, dartConstraint)
-				currentSatisfies = false
-			}
+		dartOK := versionSatisfiesConstraint(cleanDartVersion(currentVersion.dartVersion), dartConstraint)
+		if !dartOK {
+			f.Debugf("Current Dart %s does not satisfy constraint %s", currentVersion.dartVersion, dartConstraint)
 		}
 
-		if currentSatisfies {
+		if flutterOK && dartOK {
 			f.Debugf("Current Flutter %s (Dart %s) satisfies project constraints", currentVersion.version, currentVersion.dartVersion)
 			return required
 		}

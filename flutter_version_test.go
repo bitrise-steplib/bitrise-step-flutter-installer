@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 const versionMachineOut = `
@@ -438,6 +440,163 @@ func Test_NewFlutterVersionList(t *testing.T) {
 				if v != tt.want[i] {
 					t.Errorf("NewFlutterVersionList = %v, want %v", v, tt.want[i])
 				}
+			}
+		})
+	}
+}
+
+func Test_cleanDartVersion(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "clean version",
+			input: "3.8.0",
+			want:  "3.8.0",
+		},
+		{
+			name:  "version with build suffix",
+			input: "3.9.0 (build 3.9.0-100.2.beta)",
+			want:  "3.9.0",
+		},
+		{
+			name:  "older version with build suffix",
+			input: "2.3.2 (build 2.3.2-dev.0.0 e3edfd36b2)",
+			want:  "2.3.2",
+		},
+		{
+			name:  "version with build suffix and beta tag",
+			input: "2.17.0 (build 2.17.0-69.2.beta)",
+			want:  "2.17.0",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+		{
+			name:  "pre-release version without build suffix",
+			input: "3.9.0-100.2.beta",
+			want:  "3.9.0-100.2.beta",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cleanDartVersion(tt.input)
+			if got != tt.want {
+				t.Errorf("cleanDartVersion(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_versionSatisfiesConstraint(t *testing.T) {
+	mustConstraint := func(s string) *semver.Constraints {
+		c, err := semver.NewConstraint(s)
+		if err != nil {
+			t.Fatalf("invalid constraint %q: %s", s, err)
+		}
+		return c
+	}
+
+	tests := []struct {
+		name       string
+		version    string
+		constraint *semver.Constraints
+		want       bool
+	}{
+		{
+			name:       "nil constraint",
+			version:    "3.8.0",
+			constraint: nil,
+			want:       true,
+		},
+		{
+			name:       "empty version",
+			version:    "",
+			constraint: mustConstraint(">= 3.8.0"),
+			want:       true,
+		},
+		{
+			name:       "version satisfies >= constraint",
+			version:    "3.10.0",
+			constraint: mustConstraint(">= 3.8.0"),
+			want:       true,
+		},
+		{
+			name:       "version does not satisfy >= constraint",
+			version:    "3.7.0",
+			constraint: mustConstraint(">= 3.8.0"),
+			want:       false,
+		},
+		{
+			name:       "exact version match",
+			version:    "3.8.0",
+			constraint: mustConstraint(">= 3.8.0"),
+			want:       true,
+		},
+		{
+			name:       "caret constraint satisfied",
+			version:    "3.10.7",
+			constraint: mustConstraint("^3.10.7"),
+			want:       true,
+		},
+		{
+			name:       "caret constraint - higher patch",
+			version:    "3.10.9",
+			constraint: mustConstraint("^3.10.7"),
+			want:       true,
+		},
+		{
+			name:       "caret constraint - too low",
+			version:    "3.8.0",
+			constraint: mustConstraint("^3.10.7"),
+			want:       false,
+		},
+		{
+			name:       "caret constraint - next major too high",
+			version:    "4.0.0",
+			constraint: mustConstraint("^3.10.7"),
+			want:       false,
+		},
+		{
+			name:       "range constraint satisfied",
+			version:    "3.5.0",
+			constraint: mustConstraint(">= 3.4.0, < 4.0.0"),
+			want:       true,
+		},
+		{
+			name:       "range constraint - too low",
+			version:    "3.3.0",
+			constraint: mustConstraint(">= 3.4.0, < 4.0.0"),
+			want:       false,
+		},
+		{
+			name:       "unparseable version returns true",
+			version:    "not-a-version",
+			constraint: mustConstraint(">= 3.8.0"),
+			want:       true,
+		},
+		{
+			name:       "pre-release version does not satisfy non-prerelease constraint",
+			version:    "3.33.0-0.2.pre",
+			constraint: mustConstraint(">= 3.0.0"),
+			want:       false,
+		},
+		{
+			name:       "pre-release version satisfies pre-release constraint",
+			version:    "3.33.0-0.2.pre",
+			constraint: mustConstraint(">= 3.0.0-0"),
+			want:       true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := versionSatisfiesConstraint(tt.version, tt.constraint)
+			if got != tt.want {
+				t.Errorf("versionSatisfiesConstraint(%q, %v) = %v, want %v", tt.version, tt.constraint, got, tt.want)
 			}
 		})
 	}

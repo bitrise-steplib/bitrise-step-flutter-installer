@@ -27,7 +27,7 @@ var Channels = []string{
 }
 
 const flutterVersionRegexp = `v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`
-
+var dartVersionBuildSuffixRegexp = regexp.MustCompile(`^(.+?) \(build .+\)$`)
 type flutterVersion struct {
 	version     string
 	channel     string
@@ -398,7 +398,7 @@ func parseProjectConfigFiles() (flutterVersion, error) {
 // cleanDartVersion removes the "(build ...)" suffix from Dart version strings.
 // For example, "3.9.0 (build 3.9.0-100.2.beta)" becomes "3.9.0".
 func cleanDartVersion(dartVersionStr string) string {
-	if matches := regexp.MustCompile(`^(.+?) \(build .+\)$`).FindStringSubmatch(dartVersionStr); len(matches) == 2 {
+	if matches := dartVersionBuildSuffixRegexp.FindStringSubmatch(dartVersionStr); len(matches) == 2 {
 		return matches[1]
 	}
 	return dartVersionStr

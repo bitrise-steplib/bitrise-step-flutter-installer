@@ -140,13 +140,14 @@ func (f *FlutterInstaller) resolveVersionFromConstraints(required flutterVersion
 	f.Infof("Current Flutter version does not satisfy project constraints, searching for compatible version...")
 	version, channel, err := proj.FlutterSDKVersionToUse()
 	if err == nil && version != "" {
-		f.Infof("Found compatible Flutter %s (%s)", version, channel)
-		result := required
-		result.version = version
-		if channel != "" {
-			result.channel = channel
+		if channel != "" && channel != required.channel {
+			f.Warnf("Found compatible Flutter %s (%s), but it does not match the requested channel %s", version, channel, required.channel)
+		} else {
+			f.Infof("Found compatible Flutter %s (%s)", version, channel)
+			result := required
+			result.version = version
+			return result
 		}
-		return result
 	}
 
 	f.Warnf("Could not find compatible Flutter version for project constraints")

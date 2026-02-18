@@ -3,6 +3,12 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
+	"github.com/bitrise-io/go-flutter/flutterproject"
+	"github.com/bitrise-io/go-flutter/fluttersdk"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
 // EnssureFlutterVersion ensures that the required Flutter version is installed and set as default.
@@ -15,6 +21,11 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 		return fmt.Errorf("fetch required Flutter version: %w", err)
 	}
 	f.Infof("Required Flutter: %s", f.NewVersionString(requiredVersion))
+
+	// Channel-only input (e.g. "stable"): check if current version satisfies project constraints
+	if requiredVersion.version == "" && requiredVersion.channel != "" {
+		requiredVersion = f.resolveVersionFromConstraints(requiredVersion)
+	}
 
 	currentVersionString := f.NewVersionString(requiredVersion)
 	installed, currentVersion := f.compareVersionToCurrent(requiredVersion, true)
@@ -62,6 +73,85 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	}
 
 	return fmt.Errorf("installing Flutter %s: could not be installed or set as default", currentVersionString)
+}
+
+// resolveVersionFromConstraints checks if the current Flutter/Dart version satisfies project constraints.
+// If it does, returns the required version unchanged (channel-only match will work).
+// If it doesn't, finds the latest compatible version and returns it with a specific version set.
+func (f *FlutterInstaller) resolveVersionFromConstraints(required flutterVersion) flutterVersion {
+	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
+	if err != nil {
+		f.Debugf("Could not open project: %s", err)
+		return required
+	}
+
+	sdkVersions, err := proj.FlutterAndDartSDKVersions()
+	if err != nil {
+		f.Debugf("Could not read SDK versions: %s", err)
+		return required
+	}
+
+	// Collect constraints from pubspec.lock (preferred) or pubspec.yaml
+	var flutterConstraint *semver.Constraints
+	if v := sdkVersions.PubspecLockFlutterVersion; v != nil {
+		flutterConstraint = toConstraint(v.Version, v.Constraint)
+	}
+	if flutterConstraint == nil {
+		if v := sdkVersions.PubspecFlutterVersion; v != nil {
+			flutterConstraint = toConstraint(v.Version, v.Constraint)
+		}
+	}
+
+	var dartConstraint *semver.Constraints
+	if v := sdkVersions.PubspecLockDartVersion; v != nil {
+		dartConstraint = toConstraint(v.Version, v.Constraint)
+	}
+	if dartConstraint == nil {
+		if v := sdkVersions.PubspecDartVersion; v != nil {
+			dartConstraint = toConstraint(v.Version, v.Constraint)
+		}
+	}
+
+	// No constraints in project files → channel-only is fine
+	if flutterConstraint == nil && dartConstraint == nil {
+		return required
+	}
+
+	// Check if current version satisfies constraints
+	currentVersion, err := f.NewFlutterVersionFromCurrent()
+	if err == nil {
+		flutterOK := versionSatisfiesConstraint(currentVersion.version, flutterConstraint)
+		if !flutterOK {
+			f.Debugf("Current Flutter %s does not satisfy constraint %s", currentVersion.version, flutterConstraint)
+		}
+
+		dartOK := versionSatisfiesConstraint(cleanDartVersion(currentVersion.dartVersion), dartConstraint)
+		if !dartOK {
+			f.Debugf("Current Dart %s does not satisfy constraint %s", currentVersion.dartVersion, dartConstraint)
+		}
+
+		if flutterOK && dartOK {
+			f.Debugf("Current Flutter %s (Dart %s) satisfies project constraints", currentVersion.version, currentVersion.dartVersion)
+			return required
+		}
+	}
+
+	// Current version doesn't satisfy → find compatible version
+	f.Infof("Current Flutter version does not satisfy project constraints, searching for compatible version...")
+	version, channel, err := proj.FlutterSDKVersionToUse()
+	if err == nil && version != "" {
+		if channel != "" && channel != required.channel {
+			f.Warnf("Found compatible Flutter %s (%s), but it does not match the requested channel %s", version, channel, required.channel)
+		} else {
+			f.Infof("Found compatible Flutter %s (%s)", version, channel)
+			result := required
+			result.version = version
+			return result
+		}
+	}
+
+	f.Warnf("Could not find compatible Flutter version for project constraints")
+	return required
 }
 
 // compareVersionToCurrent compares the required Flutter version to the current version.

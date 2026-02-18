@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/bitrise-io/go-flutter/flutterproject"
 	"github.com/bitrise-io/go-flutter/fluttersdk"
 	"github.com/bitrise-io/go-utils/v2/env"
@@ -26,10 +27,11 @@ var Channels = []string{
 }
 
 const flutterVersionRegexp = `v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`
-
+var dartVersionBuildSuffixRegexp = regexp.MustCompile(`^(.+?) \(build .+\)$`)
 type flutterVersion struct {
-	version string
-	channel string
+	version     string
+	channel     string
+	dartVersion string
 	// installType indicates the tool used to install the Flutter version, e.g., "fvm", "asdf" parsed from version output.
 	installType string
 }
@@ -229,9 +231,16 @@ func parseVersionFromJsonMap(data map[string]any) (flutterVersion, error) {
 		installType = it
 	}
 
+	// Extract Dart SDK version if present
+	dartVersion := ""
+	if dv, ok := data["dartSdkVersion"].(string); ok {
+		dartVersion = strings.TrimSpace(dv)
+	}
+
 	return flutterVersion{
 		version:     version,
 		channel:     channel,
+		dartVersion: dartVersion,
 		installType: installType,
 	}, nil
 }
@@ -384,4 +393,41 @@ func parseProjectConfigFiles() (flutterVersion, error) {
 	}
 
 	return flutterVersion{}, fmt.Errorf("no Flutter version found in the project files")
+}
+
+// cleanDartVersion removes the "(build ...)" suffix from Dart version strings.
+// For example, "3.9.0 (build 3.9.0-100.2.beta)" becomes "3.9.0".
+func cleanDartVersion(dartVersionStr string) string {
+	if matches := dartVersionBuildSuffixRegexp.FindStringSubmatch(dartVersionStr); len(matches) == 2 {
+		return matches[1]
+	}
+	return dartVersionStr
+}
+
+// toConstraint converts a semver version or constraint into a unified *semver.Constraints.
+// If a range constraint is provided, it is returned as-is.
+// If an exact version is provided, it is converted to an equality constraint (e.g. "3.7.2" → "= 3.7.2").
+func toConstraint(version *semver.Version, constraint *semver.Constraints) *semver.Constraints {
+	if constraint != nil {
+		return constraint
+	}
+	if version != nil {
+		c, _ := semver.NewConstraint(version.String())
+		return c
+	}
+	return nil
+}
+
+// versionSatisfiesConstraint checks if a version string satisfies a semver constraint.
+// Returns true if the constraint is nil, the version is empty, or the version cannot be parsed
+// (in those cases we cannot determine incompatibility, so we assume it's fine).
+func versionSatisfiesConstraint(versionStr string, constraint *semver.Constraints) bool {
+	if constraint == nil || versionStr == "" {
+		return true
+	}
+	v, err := semver.NewVersion(versionStr)
+	if err != nil {
+		return true
+	}
+	return constraint.Check(v)
 }

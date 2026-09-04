@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bitrise-io/go-steputils/v2/export"
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
@@ -21,6 +22,7 @@ type FlutterInstaller struct {
 	logv2.Logger
 	EnvRepo    env.Repository
 	CmdFactory command.Factory
+	Exporter   export.Exporter
 	Input      Input
 }
 
@@ -58,11 +60,12 @@ func (f *FlutterInstaller) Run() error {
 	return nil
 }
 
-func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, Input Input) FlutterInstaller {
+func NewFlutterInstaller(logger logv2.Logger, envRepo env.Repository, cmdFactory command.Factory, exporter export.Exporter, Input Input) FlutterInstaller {
 	return FlutterInstaller{
 		Logger:     logger,
 		EnvRepo:    envRepo,
 		CmdFactory: cmdFactory,
+		Exporter:   exporter,
 		Input:      Input,
 	}
 }
@@ -89,8 +92,9 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	}
 
 	cmdFactory := command.NewFactory(envRepo)
+	exporter := export.NewDefaultExporter(cmdFactory)
 
-	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, input)
+	fi := NewFlutterInstaller(logger, envRepo, cmdFactory, exporter, input)
 
 	return &fi, nil
 }

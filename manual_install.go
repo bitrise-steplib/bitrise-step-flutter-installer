@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-steputils/tools"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
@@ -80,7 +79,7 @@ func (f *FlutterInstaller) DownloadFlutterSDK(required flutterVersion) error {
 		return fmt.Errorf("set env: %s", err)
 	}
 
-	if err := tools.ExportEnvironmentWithEnvman("PATH", path); err != nil {
+	if err := f.Exporter.ExportOutput("PATH", path); err != nil {
 		return fmt.Errorf("export env with envman: %s", err)
 	}
 

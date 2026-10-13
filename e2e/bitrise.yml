@@ -37,6 +37,40 @@ workflows:
         inputs:
         - is_debug: "true"
 
+  test_fvmrc_version_detection:
+    before_run:
+    - _remove_flutter
+    after_run:
+    - _test_flutter_installation
+    steps:
+    - script:
+        title: create project with .fvmrc
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            rm -rf ./_tmp
+            mkdir ./_tmp
+            printf 'name: fvmrc_sample\n' > ./_tmp/pubspec.yaml
+            printf '{\n  "flutter": "3.32.5",\n  "flavors": {}\n}\n' > ./_tmp/.fvmrc
+            envman add --key PROJECT_DIR --value "$BITRISE_SOURCE_DIR/_tmp"
+    - change-workdir:
+        title: switch to the project dir
+        inputs:
+        - path: $PROJECT_DIR
+    - path::./:
+        run_if: "true"
+        title: detect version from .fvmrc (no version input)
+        inputs:
+        - is_debug: "true"
+    - script:
+        title: assert the pinned version is active
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            set -ex
+            flutter --version | grep -q "Flutter 3.32.5"
+
   test_clean_install_stable:
     before_run:
     - _remove_flutter

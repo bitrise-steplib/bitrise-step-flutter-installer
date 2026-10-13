@@ -6,7 +6,7 @@ description: |-
   Use this step *before* the cache-pull step to make sure caching works correctly.
 
   ### Configuring the Step
-  1. In the **Flutter SDK version or bundle URL** input set the version, tag, branch, or bundle URL. The default value is `stable`.
+  1. In the **Flutter SDK version or bundle URL** input set the version, tag, branch, or bundle URL. Leave it empty to use the version pinned in the project (`.fvmrc`, `.fvm/fvm_config.json` or `.tool-versions`); if there is none, `stable` is used.
   2. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
 
   ### Troubleshooting
@@ -47,12 +47,14 @@ toolkit:
     package_name: github.com/bitrise-steplib/bitrise-step-flutter-installer
 
 inputs:
-- version: stable
+- version: ""
   opts:
     title: Flutter SDK version or bundle URL
-    summary: Install from git repository (tag/branch) or from a Flutter SDK bundle URL.
+    summary: Flutter version, channel or bundle URL. Leave empty to use the version pinned in the project.
     description: |-
       Specify the Flutter version using a tag, branch, channel name, or Flutter SDK bundle URL.
+
+      Leave it empty to use the version pinned in the project: `.fvmrc`, `.fvm/fvm_config.json` or `.tool-versions` (checked in this order). If none is found, the `stable` channel is used.
 
       **Installation priority:**
       1. Use FVM/ASDF if available and has the version installed

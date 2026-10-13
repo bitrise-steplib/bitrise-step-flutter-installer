@@ -16,10 +16,7 @@ import (
 // It gets the required version from the input or project files, checks if it is already installed,
 // and installs it using the available install types (FVM, ASDF, Manual).
 func (f *FlutterInstaller) EnsureFlutterVersion() error {
-	requiredVersion, err := f.NewFlutterVersionFromInputAndProject()
-	if err != nil {
-		return fmt.Errorf("fetch required Flutter version: %w", err)
-	}
+	requiredVersion := f.NewFlutterVersionFromInputAndProject()
 	f.Infof("Required Flutter: %s", f.NewVersionString(requiredVersion))
 
 	// Channel-only input (e.g. "stable"): check if current version satisfies project constraints
@@ -57,7 +54,8 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	}
 
 	for _, installType := range installTypes {
-		if err := f.setDefaultIfInstalled(installType, requiredVersion); err == nil {
+		err := f.setDefaultIfInstalled(installType, requiredVersion)
+		if err == nil {
 			f.Donef("Flutter %s is already installed and set as default with %s", currentVersionString, installType.Name)
 			return nil
 		}
@@ -65,7 +63,8 @@ func (f *FlutterInstaller) EnsureFlutterVersion() error {
 	}
 
 	for _, installType := range installTypes {
-		if err := f.installAndSetDefault(installType, requiredVersion); err == nil {
+		err := f.installAndSetDefault(installType, requiredVersion)
+		if err == nil {
 			f.Donef("Installed and set default Flutter %s with %s", currentVersionString, installType.Name)
 			return nil
 		}

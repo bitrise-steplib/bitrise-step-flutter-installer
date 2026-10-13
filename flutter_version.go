@@ -27,7 +27,9 @@ var Channels = []string{
 }
 
 const flutterVersionRegexp = `v?([0-9]+\.[0-9]+\.[0-9]+)(?:[-\.][A-Za-z0-9\.\-]+)?`
+
 var dartVersionBuildSuffixRegexp = regexp.MustCompile(`^(.+?) \(build .+\)$`)
+
 type flutterVersion struct {
 	version     string
 	channel     string
@@ -85,23 +87,28 @@ func (f *FlutterInstaller) NewFlutterVersionFromCurrent() (flutterVersion, error
 	return flutterVer, err
 }
 
-// NewFlutterVersionFromInputAndProject retrieves the Flutter version from the input or project configuration files.
-func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() (flutterVersion, error) {
-	parsedVersion, err := NewFlutterVersion(strings.TrimSpace(f.Input.Version))
-	if err != nil {
-		f.Debugf("parse version from input: %w", err)
-	} else if parsedVersion.version != "" || parsedVersion.channel != "" {
-		return parsedVersion, nil
+// NewFlutterVersionFromInputAndProject resolves the required Flutter version.
+//
+// The version input takes precedence. If it is empty, the version pinned in the project files
+// (.fvmrc, .fvm/fvm_config.json, .tool-versions) is used. If there is none, the stable channel is used.
+func (f *FlutterInstaller) NewFlutterVersionFromInputAndProject() flutterVersion {
+	if input := strings.TrimSpace(f.Input.Version); input != "" {
+		parsedVersion, err := NewFlutterVersion(input)
+		if err == nil && (parsedVersion.version != "" || parsedVersion.channel != "") {
+			return parsedVersion
+		}
+		f.Warnf("Could not parse Flutter version from input (%s), checking project files", input)
 	}
 
-	parsedVersion, err = parseProjectConfigFiles()
-	if err != nil {
-		f.Debugf("parse version from project config files: %w", err)
-	} else if parsedVersion.version != "" || parsedVersion.channel != "" {
-		return parsedVersion, nil
+	projectVersion, err := parseProjectConfigFiles("./")
+	if err == nil {
+		f.Infof("Using Flutter %s pinned in the project files", f.NewVersionString(projectVersion))
+		return projectVersion
 	}
+	f.Debugf("parse version from project config files: %s", err)
 
-	return flutterVersion{}, fmt.Errorf("no Flutter version specified in the configuration or project files")
+	f.Warnf("Input: 'Flutter SDK version or bundle URL' (version) is not specified and no Flutter version is pinned in the project files, using 'stable' as a default version.")
+	return flutterVersion{channel: "stable"}
 }
 
 // NewVersionString formats the flutterVersion into a human-readable string.
@@ -332,11 +339,12 @@ func parseVersionFromStringLines(input string, singleResult bool) ([]flutterVers
 	return versions, nil
 }
 
-// parseProjectConfigFiles retrieves the Flutter version from the project configuration files.
+// parseProjectConfigFiles retrieves the Flutter version pinned in the project configuration files.
 //
-// It checks for versions in pubspec.yaml, fvm, and asdf configurations.
-func parseProjectConfigFiles() (flutterVersion, error) {
-	proj, err := flutterproject.New("./", fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
+// It checks the fvm (.fvmrc, .fvm/fvm_config.json), asdf (.tool-versions), pubspec.lock and pubspec.yaml
+// files, in this order. Version constraints (e.g. ">=3.22.0") are not considered a pinned version.
+func parseProjectConfigFiles(projectDir string) (flutterVersion, error) {
+	proj, err := flutterproject.New(projectDir, fileutil.NewFileManager(), pathutil.NewPathChecker(), fluttersdk.NewSDKVersionFinder())
 	if err != nil {
 		return flutterVersion{}, fmt.Errorf("open project: %s", err)
 	}
@@ -376,20 +384,16 @@ func parseProjectConfigFiles() (flutterVersion, error) {
 		}
 	}
 
-	if pubLock := sdkVersions.PubspecLockFlutterVersion; pubLock != nil {
-		if version := pubLock.String(); version != "" && versionRegexp.MatchString(version) {
-			return flutterVersion{
-				version: version,
-			}, nil
-		}
+	if pubLock := sdkVersions.PubspecLockFlutterVersion; pubLock != nil && pubLock.Version != nil {
+		return flutterVersion{
+			version: pubLock.Version.String(),
+		}, nil
 	}
 
-	if pubSpec := sdkVersions.PubspecFlutterVersion; pubSpec != nil {
-		if version := pubSpec.String(); version != "" && versionRegexp.MatchString(version) {
-			return flutterVersion{
-				version: sdkVersions.PubspecFlutterVersion.String(),
-			}, nil
-		}
+	if pubSpec := sdkVersions.PubspecFlutterVersion; pubSpec != nil && pubSpec.Version != nil {
+		return flutterVersion{
+			version: pubSpec.Version.String(),
+		}, nil
 	}
 
 	return flutterVersion{}, fmt.Errorf("no Flutter version found in the project files")

@@ -11,7 +11,7 @@ This Step installs the Flutter SDK using FVM, ASDF, or manual installation metho
 Use this step *before* the cache-pull step to make sure caching works correctly.
 
 ### Configuring the Step
-1. In the **Flutter SDK version or bundle URL** input set the version, tag, branch, or bundle URL. The default value is `stable`.
+1. In the **Flutter SDK version or bundle URL** input set the version, tag, branch, or bundle URL. Leave it empty to use the version pinned in the project (`.fvmrc`, `.fvm/fvm_config.json` or `.tool-versions`); if there is none, `stable` is used.
 2. Enable **Print debug information** to run `flutter doctor` to see if there are any missing platform dependencies for setting up Flutter.
 
 ### Troubleshooting
@@ -40,7 +40,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 
 | Key | Description | Flags | Default |
 | --- | --- | --- | --- |
-| `version` | Specify the Flutter version using a tag, branch, channel name, or Flutter SDK bundle URL.  **Installation priority:** 1. Use FVM/ASDF if available and has the version installed 2. Install via FVM/ASDF if version is available in their releases 3. Manual installation: download from bundle URL or clone from git repository  **Examples:** - Channels: `stable`, `beta`, `dev` - Versions: `3.32.5`, `v1.6.3-beta` - Bundle URL: `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip`  **Resources:** - [Version tags](https://github.com/flutter/flutter/releases) - [Branches](https://github.com/flutter/flutter/branches) - [Bundle URLs](https://flutter.dev/docs/development/tools/sdk/releases) |  | `stable` |
+| `version` | Specify the Flutter version using a tag, branch, channel name, or Flutter SDK bundle URL.  Leave it empty to use the version pinned in the project: `.fvmrc`, `.fvm/fvm_config.json` or `.tool-versions` (checked in this order). If none is found, the `stable` channel is used.  **Installation priority:** 1. Use FVM/ASDF if available and has the version installed 2. Install via FVM/ASDF if version is available in their releases 3. Manual installation: download from bundle URL or clone from git repository  **Examples:** - Channels: `stable`, `beta`, `dev` - Versions: `3.32.5`, `v1.6.3-beta` - Bundle URL: `https://storage.googleapis.com/flutter_infra/releases/beta/macos/flutter_macos_v1.6.3-beta.zip`  **Resources:** - [Version tags](https://github.com/flutter/flutter/releases) - [Branches](https://github.com/flutter/flutter/branches) - [Bundle URLs](https://flutter.dev/docs/development/tools/sdk/releases) |  |  |
 | `is_debug` | If enabled will run flutter doctor and print value of PATH eniroment variable. |  | `false` |
 </details>
 

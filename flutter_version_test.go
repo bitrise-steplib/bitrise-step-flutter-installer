@@ -1,9 +1,12 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	logv2 "github.com/bitrise-io/go-utils/v2/log"
 )
 
 const versionMachineOut = `
@@ -681,4 +684,190 @@ func Test_toConstraint(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_parseProjectConfigFiles(t *testing.T) {
+	t.Setenv("ANALYTICS_DISABLED", "true")
+
+	const pubspec = "name: sample\n"
+	tests := []struct {
+		name    string
+		files   map[string]string
+		want    flutterVersion
+		wantErr bool
+	}{
+		{
+			name: ".fvmrc",
+			files: map[string]string{
+				"pubspec.yaml": pubspec,
+				".fvmrc":       `{"flutter": "3.47.7", "flavors": {}}`,
+			},
+			want: flutterVersion{version: "3.47.7", installType: FVMName},
+		},
+		{
+			name: ".fvmrc with channel",
+			files: map[string]string{
+				"pubspec.yaml": pubspec,
+				".fvmrc":       `{"flutter": "3.47.7@beta"}`,
+			},
+			want: flutterVersion{version: "3.47.7", channel: "beta", installType: FVMName},
+		},
+		{
+			name: "legacy .fvm/fvm_config.json",
+			files: map[string]string{
+				"pubspec.yaml":         pubspec,
+				".fvm/fvm_config.json": `{"flutterSdkVersion": "3.7.12", "flavors": {}}`,
+			},
+			want: flutterVersion{version: "3.7.12", installType: FVMName},
+		},
+		{
+			name: "legacy fvm config takes precedence over .fvmrc",
+			files: map[string]string{
+				"pubspec.yaml":         pubspec,
+				".fvm/fvm_config.json": `{"flutterSdkVersion": "3.7.12"}`,
+				".fvmrc":               `{"flutter": "3.47.7"}`,
+			},
+			want: flutterVersion{version: "3.7.12", installType: FVMName},
+		},
+		{
+			name: ".tool-versions",
+			files: map[string]string{
+				"pubspec.yaml":   pubspec,
+				".tool-versions": "nodejs 20.0.0\nflutter 3.22.0-stable\n",
+			},
+			want: flutterVersion{version: "3.22.0", channel: "stable", installType: ASDFName},
+		},
+		{
+			name: "fvm takes precedence over asdf",
+			files: map[string]string{
+				"pubspec.yaml":   pubspec,
+				".fvmrc":         `{"flutter": "3.47.7"}`,
+				".tool-versions": "flutter 3.22.0-stable\n",
+			},
+			want: flutterVersion{version: "3.47.7", installType: FVMName},
+		},
+		{
+			name: "pubspec.lock constraint is not a pinned version",
+			files: map[string]string{
+				"pubspec.yaml": pubspec,
+				"pubspec.lock": "sdks:\n  dart: \">=3.4.0 <4.0.0\"\n  flutter: \">=3.22.0\"\n",
+			},
+			wantErr: true,
+		},
+		{
+			name: "pubspec.yaml exact version",
+			files: map[string]string{
+				"pubspec.yaml": "name: sample\nenvironment:\n  sdk: ^3.4.0\n  flutter: 3.22.0\n",
+			},
+			want: flutterVersion{version: "3.22.0"},
+		},
+		{
+			name: "pubspec.yaml constraint is not a pinned version",
+			files: map[string]string{
+				"pubspec.yaml": "name: sample\nenvironment:\n  sdk: ^3.4.0\n  flutter: ^3.22.0\n",
+			},
+			wantErr: true,
+		},
+		{
+			name:    "no pubspec.yaml",
+			files:   map[string]string{".fvmrc": `{"flutter": "3.47.7"}`},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseProjectConfigFiles(writeProjectFiles(t, tt.files))
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parseProjectConfigFiles() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("parseProjectConfigFiles() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_NewFlutterVersionFromInputAndProject(t *testing.T) {
+	t.Setenv("ANALYTICS_DISABLED", "true")
+
+	const pubspec = "name: sample\n"
+	const fvmrc = `{"flutter": "3.47.7"}`
+	tests := []struct {
+		name  string
+		input string
+		files map[string]string
+		want  flutterVersion
+	}{
+		{
+			name:  "version input takes precedence over project pin",
+			input: "3.32.5",
+			files: map[string]string{"pubspec.yaml": pubspec, ".fvmrc": fvmrc},
+			want:  flutterVersion{version: "3.32.5"},
+		},
+		{
+			name:  "channel input takes precedence over project pin",
+			input: "beta",
+			files: map[string]string{"pubspec.yaml": pubspec, ".fvmrc": fvmrc},
+			want:  flutterVersion{channel: "beta"},
+		},
+		{
+			name:  "empty input uses project pin",
+			input: "",
+			files: map[string]string{"pubspec.yaml": pubspec, ".fvmrc": fvmrc},
+			want:  flutterVersion{version: "3.47.7", installType: FVMName},
+		},
+		{
+			name:  "empty input without project pin defaults to stable",
+			input: "",
+			files: map[string]string{"pubspec.yaml": pubspec},
+			want:  flutterVersion{channel: "stable"},
+		},
+		{
+			name:  "empty input without project defaults to stable",
+			input: "",
+			want:  flutterVersion{channel: "stable"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chdir(t, writeProjectFiles(t, tt.files))
+			f := FlutterInstaller{Logger: logv2.NewLogger(), Input: Input{Version: tt.input}}
+			if got := f.NewFlutterVersionFromInputAndProject(); got != tt.want {
+				t.Errorf("NewFlutterVersionFromInputAndProject() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
+// writeProjectFiles writes the given files (relative path -> content) into a new temporary directory.
+func writeProjectFiles(t *testing.T, files map[string]string) string {
+	t.Helper()
+	dir := t.TempDir()
+	for name, content := range files {
+		path := filepath.Join(dir, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return dir
+}
+
+// chdir changes the working directory for the duration of the test.
+func chdir(t *testing.T, dir string) {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(wd); err != nil {
+			t.Errorf("restore working directory: %s", err)
+		}
+	})
 }

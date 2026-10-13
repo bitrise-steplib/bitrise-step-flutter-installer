@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
-	github.com/bitrise-io/go-flutter v0.1.1
+	github.com/bitrise-io/go-flutter v0.3.0
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.54
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
 )

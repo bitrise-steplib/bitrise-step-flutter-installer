@@ -82,11 +82,6 @@ func ConfigureFlutterInstaller() (*FlutterInstaller, error) {
 	logger := logv2.NewLogger()
 	logger.EnableDebugLog(input.IsDebug)
 
-	if input.Version == "" {
-		logger.Warnf("Input: 'Flutter SDK git repository version' (version) is not specified, using 'stable' as a default version.")
-		input.Version = "stable"
-	}
-
 	if err := envRepo.Set("CI", "true"); err != nil {
 		logger.Debugf("Set env 'CI': %s", err)
 	}
